@@ -3,7 +3,8 @@
 import type { UserContent } from "ai";
 import { Client, type MessageStreamEvent } from "eve/client";
 import { useEveAgent } from "eve/react";
-import { AlertCircleIcon, PhoneIcon } from "lucide-react";
+import { PhoneIcon } from "lucide-react";
+import { motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Conversation,
@@ -224,11 +225,11 @@ export function AgentChat() {
 
       {errorMessage ? (
         <div className="mx-auto w-full max-w-3xl shrink-0 px-4 pt-2 sm:px-6">
-          <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm">
-            <AlertCircleIcon className="mt-0.5 size-4 shrink-0 text-destructive" />
-            <div>
-              <p className="font-medium">No se pudo completar el pedido</p>
-              <p className="mt-0.5 text-muted-foreground">{errorMessage}</p>
+          <div className="flex items-start gap-3 border border-destructive/40 bg-destructive/5 px-4 py-3 font-mono text-xs">
+            <span className="mt-1 size-2 shrink-0 animate-pulse bg-destructive" />
+            <div className="min-w-0">
+              <p className="uppercase tracking-wider text-destructive">error · no se pudo completar</p>
+              <p className="mt-1 text-muted-foreground">{errorMessage}</p>
             </div>
           </div>
         </div>
@@ -238,18 +239,24 @@ export function AgentChat() {
         <Conversation className="min-h-0 flex-1">
           <ConversationContent className="mx-auto w-full max-w-3xl gap-6 px-4 py-6 sm:px-6">
             {agent.data.messages.map((message, index) => (
-              <AgentMessage
-                canRespond={!isBusy}
-                isStreaming={
-                  agent.status === "streaming" && index === agent.data.messages.length - 1
-                }
+              <motion.div
+                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 8 }}
                 key={message.id}
-                message={message}
-                onInputResponses={(inputResponses) => {
-                  prepareTurn();
-                  return agent.send({ inputResponses });
-                }}
-              />
+                transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <AgentMessage
+                  canRespond={!isBusy}
+                  isStreaming={
+                    agent.status === "streaming" && index === agent.data.messages.length - 1
+                  }
+                  message={message}
+                  onInputResponses={(inputResponses) => {
+                    prepareTurn();
+                    return agent.send({ inputResponses });
+                  }}
+                />
+              </motion.div>
             ))}
             {demoActive ? <CallDemoResponse /> : null}
           </ConversationContent>

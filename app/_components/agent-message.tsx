@@ -16,15 +16,9 @@ import {
 } from "lucide-react";
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
 import { Reasoning, ReasoningContent, ReasoningTrigger } from "@/components/ai-elements/reasoning";
-import {
-  Tool,
-  ToolContent,
-  ToolHeader,
-  ToolInput,
-  ToolOutput,
-} from "@/components/ai-elements/tool";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { ToolOperation, type ToolStatus } from "./tool-operation";
 
 export type AgentInputResponse = {
   readonly optionId?: string;
@@ -92,7 +86,7 @@ function AgentMessagePart({
       );
     case "reasoning":
       return (
-        <Reasoning defaultOpen isStreaming={part.state === "streaming"}>
+        <Reasoning isStreaming={part.state === "streaming"}>
           <ReasoningTrigger />
           <ReasoningContent>{part.text}</ReasoningContent>
         </Reasoning>
@@ -101,28 +95,27 @@ function AgentMessagePart({
       return <AttachmentPart part={part} />;
     case "authorization":
       return <AuthorizationPrompt part={part} />;
-    case "dynamic-tool":
+    case "dynamic-tool": {
+      const status: ToolStatus =
+        part.errorText !== undefined
+          ? "error"
+          : part.output !== undefined
+            ? "done"
+            : "running";
       return (
-        <Tool
-          defaultOpen={part.state === "approval-requested" || part.state === "approval-responded"}
-        >
-          <ToolHeader
-            state={part.state}
-            title={part.toolName}
-            toolName={part.toolName}
-            type="dynamic-tool"
+        <div className="space-y-2">
+          <ToolOperation label={part.toolName} status={status} />
+          <InputRequestActions
+            canRespond={canRespond}
+            onInputResponses={onInputResponses}
+            part={part}
           />
-          <ToolContent>
-            <ToolInput input={part.input} />
-            <InputRequestActions
-              canRespond={canRespond}
-              part={part}
-              onInputResponses={onInputResponses}
-            />
-            <ToolOutput errorText={part.errorText} output={part.output} />
-          </ToolContent>
-        </Tool>
+          {part.errorText !== undefined ? (
+            <p className="font-mono text-destructive text-xs">{part.errorText}</p>
+          ) : null}
+        </div>
       );
+    }
   }
 }
 

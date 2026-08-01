@@ -1,9 +1,9 @@
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
+import { useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
-import { ConsoleDot } from "./console-shell";
 import { PERSONA } from "./landing/persona";
+import { ToolOperation } from "./tool-operation";
 
 type Block =
   | { type: "text"; text: string }
@@ -120,24 +120,7 @@ export function CallDemoResponse() {
             );
           }
           return (
-            <div
-              className="flex items-center gap-2 border border-[color:var(--kg-line)] bg-[var(--kg-panel)] px-3 py-2 font-mono text-xs"
-              key={i}
-            >
-              <ConsoleDot animated={b.status === "running"} />
-              <span className="text-[color:var(--kg-dim)]">{b.label}</span>
-              {b.status === "running" ? (
-                <span className="text-[color:var(--kg-dim)]">· buscando…</span>
-              ) : (
-                <motion.span
-                  animate={{ opacity: 1 }}
-                  className="text-[color:var(--kg-accent)]"
-                  initial={{ opacity: 0 }}
-                >
-                  → {b.result} ✓
-                </motion.span>
-              )}
-            </div>
+            <ToolOperation detail={b.result} key={i} label={b.label} status={b.status} />
           );
         })}
       </div>
