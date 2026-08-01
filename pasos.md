@@ -118,3 +118,251 @@ No se modificó código. A la espera del próximo entregable del orquestador.
    así que no pude ver la animación ni medir el layout real. El código sigue el patrón pedido y los
    guards anti-overflow están puestos, pero **queda pendiente una confirmación visual** (orquestador
    o humano con browser). Es lo único sin cerrar de los criterios de aceptación.
+
+### E2 revisado + cambio de dirección de arte (orquestador)
+
+- E2 **aprobado**: causa de H1 confirmada empíricamente (motion.span con múltiples hijos), 0
+  warnings medidos, loop 9s, grano, responsive. Buen trabajo de aislamiento del ejecutor.
+- **Decisión del humano:** la landing se veía "hecha con IA" (dark+emerald+gradient-text+glows =
+  receta reconocible). Se eligió nueva dirección: **"Consola de la llamada"** — la landing como
+  consola de Kigent, transcript como hilo conductor. Mono-first, bordes rectos, tinta + ámbar
+  único, lenguaje de terminal (timestamps, '>cliente:', logs de extracción, tablas).
+- Roadmap actualizado: **E3a** tokens+nav+hero (delegado), **E3b** secciones al estilo consola,
+  E4 detalles (favicon/OG/selection), E5 cierre (build+push).
+- Push a origin pendiente de auth del humano (`gh auth login`); hay 1 commit local (f9c02db).
+
+### E3a — reporte ejecutor (term_95462549)
+
+**Resultado: COMPLETADO.** Fase 1 de 2 (tokens + nav + hero). NO se tocaron las secciones de
+contenido; en `sections.tsx` solo se reescribió `LandingNav`.
+
+**Archivos y cambios (archivo:línea):**
+1. **Tokens/base** — `app/page.tsx:22-34` (const `theme: CSSProperties`): paleta de consola como CSS
+   vars en el wrapper → `--kg-ink` tinta cálida `oklch(0.14 0.008 80)`, `--kg-amber`
+   `oklch(0.78 0.15 70)`, más `--kg-panel/-line/-text/-dim` (stone). Se quitó `bg-zinc-950 text-zinc-50`;
+   ahora bg/text salen de los vars. `colorScheme: dark`. Los tokens cascadean a nav y hero.
+2. **LandingNav** — `sections.tsx:274-313`: logo `KIGENT` + **cursor ámbar parpadeante** (motion.span,
+   blink duro con `times`), nav mono uppercase, botón rectangular `[ Abrir asistente ]` (borde ámbar,
+   hover invertido). Sin `rounded-full`, sin `backdrop-blur`, sin emerald.
+3. **Hero → consola** — `hero.tsx` reescrito:
+   - Headline **mono bold** (`:120`), segunda línea en **ámbar sólido** (sin gradient-text).
+   - Label `Kigent // AI Property Match` con cuadrado ámbar (`:116-117`).
+   - Botones rectangulares `[ Abrir asistente ]` / `[ Cómo funciona ]`.
+   - Consola (col. derecha): barra de estado `● LLAMADA EN CURSO … 00:02:47` con dot que late
+     (`:170-190`), **medidor de nivel** de 12 barras rectas animadas (`:193-215`), y log que
+     **loopea**: transcript con prefijo `>cliente:` (`:49-60`), extracciones como líneas de log ámbar
+     `02:5x → key=value ✓` (`:63-73`), y **fila de match** `MATCH · Pellegrini 1450 · 97.0%` (`:75-91`).
+   - **Conservado:** loop 9s (`CYCLE_MS` + `cycle` + `AnimatePresence` `:199-209`), grano
+     (`GRAIN_SVG` `:31`, div `:106-110`), responsive (min-w-0/shrink-0/truncate/flex-1).
+   - **Eliminado:** glow radial (borrado), gradient-text, glassmorphism/blur, pills.
+   - **H1:** todos los `motion.*` tienen 0 o 1 hijo directo (los multi-hijo van envueltos en un `<span>`).
+
+**Verificaciones:**
+- ✅ `npm run typecheck` → exit 0 (los CSS vars custom tipan bien con @types/react 19).
+- ✅ **0 warnings** de React por render SSR (medido antes/después).
+- ✅ Sin emerald/teal en hero ni nav; sin `bg-clip-text`/`rounded-full`/`backdrop-blur`/`radial-gradient` en hero.
+- ✅ `/` → HTTP 200; en SSR aparecen `KIGENT`, `>cliente:`, `00:02:47`, `Match` y el token ámbar `0.78 0.15 70`.
+- ✅ Sin errores nuevos en el log (hidratación/AnimatePresence limpios).
+- ⚠️ **Loop y 390px NO verificados visualmente** (extensión de Chrome sigue sin conectar). Guards de
+   overflow puestos y patrón de loop igual al de E2 (ya validado), pero la confirmación visual queda
+   pendiente para el humano/orquestador con browser.
+- ℹ️ **Nota de coherencia (esperada):** las secciones (HowItWorks/Matching/…) siguen en zinc+emerald
+   → contraste con el nuevo nav/hero hasta que se haga E3b. Es el estado intermedio previsto del plan.
+
+### Ajuste de dirección (humano, durante E3a)
+
+- **Los ámbar/amarillos no van.** Se mantiene íntegro el concepto "Consola de la llamada"
+  (mono, rectos, timestamps, logs) pero con la **paleta original**: fondo near-black neutro
+  (zinc) + acento **emerald**. Ejecutor redirigido en caliente; tokens `--kg-*` pasan a
+  escala zinc con `--kg-accent` emerald. Guion (`docs/landing-guion.md`) actualizado.
+
+### E3a — revert de color a zinc+emerald (ejecutor — term_95462549)
+
+**Resultado: COMPLETADO.** Solo cambio de color; el concepto consola queda intacto.
+
+- `page.tsx:22-34` — tokens reasignados: `--kg-ink oklch(0.145 0 0)` (near-black neutro),
+  `--kg-panel 0.18 0 0`, `--kg-line 0.3 0 0`, `--kg-text 0.89 0 0`, `--kg-dim 0.62 0 0`, y
+  **`--kg-amber` renombrado a `--kg-accent` = `oklch(0.77 0.15 165)` (emerald)**. Comentario actualizado.
+- `hero.tsx` — 10 referencias `var(--kg-amber)` → `var(--kg-accent)` (headline emphasis, dot de
+  estado, medidor, `>cliente:`, extracciones, ✓, badge MATCH, 97.0%).
+- `sections.tsx` (LandingNav) — 2 referencias → `--kg-accent` (cursor + botón).
+
+**Verificaciones:**
+- ✅ `npm run typecheck` → exit 0.
+- ✅ **0 warnings** por render SSR.
+- ✅ **Cero ámbar residual**: sin `--kg-amber`, sin el color viejo `0.78 0.15 70`, sin la palabra
+  "amber"/"ámbar" en los 3 archivos ni en el SSR.
+- ✅ `/` → 200; en SSR: `--kg-accent`, near-black `0.145 0 0` y emerald `0.77 0.15 165` presentes;
+   se conservan `KIGENT` y `>cliente:`.
+- ⚠️ Visual (loop + 390px) sigue sin verificar por la extensión de Chrome desconectada.
+
+### E3-WOW delegado (orquestador → ejecutor)
+
+- Feedback del humano: "muy estándar, faltan animaciones GSAP/motion, cosas LOCAS, wow".
+- Paleta revertida verificada (cero ámbar en grep; zinc + emerald de vuelta).
+- Brief E3-WOW (reemplaza E3b), con motion v12 sin sumar gsap: **W1** scrollytelling del hero
+  (consola pinned 250vh, el scroll maneja la llamada 00:00→03:00, rebobinable), **W2** headline
+  con efecto decode/scramble por caracteres, **W3** waveform full-width reactiva a velocidad de
+  scroll, **W4** marquee de señales + contadores con spring + CTA magnético, **W5** boot
+  sequence 1.2s con sessionStorage. Reglas: 60fps (solo transform/opacity), reduced-motion,
+  mobile OK. Checkpoint de revisión tras W1+W2.
+
+### Adenda a E3-WOW (crítica visual externa integrada)
+
+- El humano trajo una revisión de Codex sobre captura real del hero. El orquestador la evaluó:
+  coincide con el guion en lo estructural y suma piezas nuevas → integradas al canon en
+  `docs/landing-guion.md` (sección "Adenda") y bajadas al ejecutor en caliente.
+- Claves nuevas: llamada humanizada (Sofía Martínez / asesor Martín), payoff visible al
+  completar perfil, headline en 3 líneas + timestamp gigante tenue, consola +15-20%, marquee
+  como puente entre folds, CTA '[ VER LA LLAMADA ]'.
+
+### E3-WOW checkpoint 1 — reporte ejecutor (term_95462549)
+
+**Estado: W1 (scrollytelling) + W2 (decode) COMPLETOS + adenda 1–4 y CTA integradas.** Falta W3–W5.
+Archivos: nuevos `decode-text.tsx` y `persona.ts`; reescrito `hero.tsx`; `sections.tsx` (2 headings).
+
+**W1 — Scrollytelling del hero (`hero.tsx`):**
+- Contenedor `h-[150vh] md:h-[260vh]` (`:91`) con consola/hero **pinned** (`sticky top-0` `:93`).
+- `useScroll({target, offset:["start start","end end"]})` (`:81`) → `scrollYProgress` maneja todo.
+- **Timestamp corriendo 00:00→03:00** atado al scroll: `useTransform` (`:87-88`), render como
+  gigante tenue detrás del headline (`text-[15rem] opacity-[0.05]` `:108-110`) y en el header de consola.
+- Transcript / extracciones / match / **payoff** se revelan por **rangos de scroll** vía
+  `<ScrollStep from..to>` (`:51-77`); bajar avanza, subir rebobina (gratis con scrollYProgress).
+- Solo `opacity`+`y` (transform). El medidor de audio pasó de animar `height` a **`scaleY`** (`:185-188`) → transform puro 60fps.
+
+**Adenda integrada:**
+- (1) Humanizada: `persona.ts` (Sofía Martínez / asesor Martín / Rosario · entrante), header `:165` + subheader; Sofía se reusa en match/payoff y queda disponible para las secciones.
+- (2) **Payoff** al final de la secuencia (`:258-284`): `PERFIL COMPLETO ✓ / 12 analizadas / mejor match 97.0% / Propuesta lista →`.
+- (3) Headline **3 líneas** (`:120-122`) + timestamp gigante detrás.
+- (4) Consola más protagonista: grid `lg:grid-cols-[0.95fr_1.05fr]`, panel más contrastado (`bg-[oklch(0.185_0_0)]`), padding/tipografía subidos.
+- CTA secundaria → **`[ Ver la llamada ]`** (`:143`).
+
+**W2 — Decode terminal (`decode-text.tsx`, `:25`):**
+- Scramble de glyphs que resuelve al texto real, izq→der, con `requestAnimationFrame` (transform/contenido, no layout).
+- A11y: texto real en `sr-only`, scramble `aria-hidden` (`:79-80`). SSR renderiza el texto real (sin CLS ni mismatch).
+- Aplicado al **H1** (mount, stagger por línea `:120-122`) y a los **headings de sección** on-view (`sections.tsx:96`, `:254-255`).
+
+**Verificaciones:**
+- ✅ `npm run typecheck` → exit 0.
+- ✅ **0 warnings** de React por render SSR (todos los `motion.*`/`ScrollStep` con 0-1 hijo).
+- ✅ `/` → 200; SSR trae "La llamada termina", "Sofía Martínez", "Perfil completo", "Propuesta lista", "Ver la llamada".
+- ✅ **Cero ámbar** (token/color/palabra) en código y SSR. Reduced-motion: pin se desactiva, pasos visibles fijos, timestamp fijo.
+- ✅ Sin errores de hidratación en el log.
+
+**⚠️ Pendientes / decisiones para tu revisión:**
+1. **Sin verificación visual** (crítico acá): el scrollytelling es 100% scroll/visual y la extensión
+   de Chrome sigue desconectada. Verifiqué estructura + SSR + 0 warnings + typecheck, pero **NO vi
+   correr el pin, el timestamp ni los reveals**. Necesito ojo humano/browser sí o sí en este.
+2. **Mobile**: en <lg la consola + headline apilados dentro de un pin `min-h-dvh` pueden **clippear**
+   (mucho contenido vertical). Reduje el pin a 150vh y oculté el timestamp gigante en mobile, pero
+   el ajuste fino de que entre todo en pantalla necesita verse en 390px.
+3. **"Loop 9s como fallback"**: lo **reemplacé** por el scroll-driving (durante el pin el scroll ES
+   el reloj). Como la consola se va de pantalla al terminar el pin, un loop posterior no aporta.
+   ¿Confirmás que va así, o querés el loop corriendo cuando el hero está quieto/visible?
+
+Ideas creativas volcadas en `docs/ideas-ejecutor.md` (12 propuestas con esfuerzo estimado).
+Freno acá según lo pedido y espero tu revisión antes de W3–W5.
+
+### Revisión checkpoint 1 + recalibración "aura inmobiliaria" (orquestador)
+
+- **W1 scrollytelling: APROBADO** (pin + timestamp scroll-driven + payoff + Sofía; 0 warnings,
+  reduced-motion OK). Pendiente verificación visual (ningún browser conectado — queda para el humano).
+- **W2 decode: ELIMINADO por feedback del humano** ("muy cibernético; tiene que tener aura de
+  inmobiliaria"). Reemplazo: reveal editorial por líneas (máscara + translateY, stagger).
+- **Recalibración de dirección:** mono/terminal SOLO dentro de la consola de la demo (interfaz del
+  producto); headlines/secciones/marca → editorial premium inmobiliario. W5 boot reformulado como
+  "llamada entrante · Sofía Martínez ▼ atender" (1s, elegante, sin deps técnicas).
+- **Decisiones:** loop→scroll aprobado con estado vivo en progress 0 + "▼ Atender la llamada"
+  (scrollear = atender). Ideas del ejecutor: aprobadas rail de llamada, typing ▊ en transcript,
+  ⟲ REW, reloj footer; rechazadas scanlines y boot-deps (cibernéticas); M/L a stretch post-E5.
+- Delegado: fix decode + W3–W5 reformulado + 4 ideas aprobadas → "E3-WOW checkpoint 2".
+
+### E-APP planificado (orquestador) — migración UI de /app
+
+- Pedido de Julian: animar/migrar la UI del asistente. Auditoría hecha de `agent-chat.tsx` y
+  `agent-message.tsx`. Spec completa en `docs/app-ui-plan.md`.
+- Idea fuerza: /app ES la consola del hero hecha producto (continuidad landing → asistente).
+  Solo capa visual; la lógica eve no se toca. Hallazgos: tema light por defecto (≠ landing),
+  yellow-500 en InputRequestActions (color vetado), radios mixtos, tool-calls sin estados vivos.
+- Roadmap actualizado: E3-WOW cp2 → **E-APP** → E3b → E4 → E5.
+- ⚠️ Coordinación: fable.md asigna "producto" al otro equipo; E-APP es solo presentación y a
+  pedido del humano — avisar al equipo antes de mergear.
+
+### Ajuste de narrativa: la demo = /app real (humano → orquestador → ejecutor)
+
+- Julian: "guiate en lo que hay en /app; en la landing tenemos que mostrar un poco de lo que se
+  hace ahí". La demo del hero deja de ser una llamada en vivo y pasa a ser una **sesión real del
+  asistente**: consulta del asesor → perfil → tool call `kiteprop.search` visible → ranking →
+  "Propuesta enviada a Sofía ✓". Reloj 00:00→00:47 (métrica <1 min). Headline no cambia (la
+  llamada termina → la consulta entra a Kigent → propuesta lista). Escucha en vivo queda como
+  visión, no como demo. Guion actualizado; brief enviado al ejecutor antes del checkpoint 2.
+- Bonus de coherencia: la demo del hero y E-APP convergen — misma consola en landing y producto.
+
+### Prioridad máxima (humano): eliminar decode/scramble YA
+
+- Julian reporta que el efecto de letras revueltas en títulos SIGUE visible y le molesta mucho
+  (segunda vez que se pide). Orden al ejecutor con prioridad sobre todo: eliminarlo de H1 +
+  headings, borrar decode-text.tsx, usar reveal editorial en todos los títulos, verificar con
+  grep, confirmar en pasos.md de inmediato.
+
+- **[FIX urgente] Efecto scramble/decode ELIMINADO** de H1 y de todos los headings de sección; `decode-text.tsx` borrado del árbol (grep sin rastros). Reemplazado por `LineReveal` (máscara + translateY, ease [0.16,1,0.3,1]). Typecheck verde.
+
+### E3-WOW checkpoint 2 — reporte ejecutor (term_95462549)
+
+**Estado: W3 + W4 + W5 + 4 ideas + fix decode + recalibración editorial + narrativa producto = COMPLETO.**
+Verificado: typecheck exit 0 · **0 warnings** · sin errores de hidratación · `/` → 200 · **cero ámbar**.
+
+**FIX crítico (decode):** eliminado de H1 y de TODOS los headings; `decode-text.tsx` borrado (grep sin rastros).
+Reemplazo `LineReveal` (`reveal.tsx`): máscara `overflow-hidden` + `translateY 110%→0`, ease `[0.16,1,0.3,1]`,
+stagger por línea. Reduced-motion → fade. Usado en H1 (`hero.tsx`), `SectionHeading` y CTA final (`sections.tsx`).
+
+**(B) Recalibración editorial:** lo mono/terminal vive SOLO en la consola del hero. Headline, eyebrow,
+párrafo y botones pasan a `font-sans` premium; marquee y stats en sans.
+
+**Narrativa = producto real de /app** (leí `agent-chat.tsx`): la consola ya no es una llamada inventada.
+Secuencia scroll-driven: (1) consulta del asesor `>martín: Sofía busca depto 2 dorm…` (2) Kigent extrae
+perfil (chips) (3) **tool-call visible** `kiteprop.search · buscando… → 12 resultados ✓` (crossfade por scroll,
+`SearchToolCall`) (4) ranking (match 97%) (5) payoff `Propuesta enviada a Sofía ✓ · por email`. **Reloj 00:00→00:47**
+(refuerza <1 min). Indicador `▼ Ver la consulta`. Header `Kigent · asistente / Asesor: Martín · CRM: KiteProp`.
+La escucha de llamada en vivo queda para inferencias (no acá). Headline sin cambios.
+
+**W3 — Waveform reactiva** (`waveform.tsx`): 44 barras full-width detrás del hero; respira suave (scaleY infinito)
+y su amplitud (scaleY del contenedor) responde a `useVelocity(scrollY)` suavizado con `useSpring`. Solo transform.
+
+**W4:**
+- **Marquee** (`marquee.tsx`): 16 señales del producto en cinta infinita (translateX, loop seamless x2). Puente hero→sección.
+- **Contadores** (`stats.tsx`): `<1 min · 97% · 15+ · 0` con `animate(spring)` al entrar en viewport (`useMotionValue`+`useTransform`).
+- **CTA magnético** (`magnetic.tsx`): el botón sigue al puntero (`useMotionValue`+`useSpring`, solo x/y) y vuelve; aplicado al CTA primario del hero.
+
+**W5 — Llamada entrante** (`incoming-call.tsx`): preloader de 1ª visita (`sessionStorage`), ~1.1s, elegante
+(`Llamada entrante · Sofía Martínez · ▼ Atender`), corte suave. NADA de boot técnico. Reduced-motion: más corto.
+
+**4 ideas aprobadas:**
+- Rail de progreso de llamada (`hero.tsx`, línea vertical con fill `scaleY: scrollYProgress`).
+- Cursor ▊ de prompt vivo en la consola (`> esperando consulta ▊`, blink duro).
+- Afordance `⟲ rew` al rebobinar (`useVelocity` negativa → opacity con spring, sin re-render).
+- Reloj real en el footer (`LiveClock`, hora local, placeholder SSR sin mismatch).
+
+**Reglas:** solo transform/opacity en lo animado; `useReducedMotion` degrada en todos los componentes; paleta emerald/zinc estricta.
+
+**⚠️ Pendientes honestos (los mismos de siempre + nuevos por volumen):**
+1. **Sin verificación visual** — la extensión de Chrome sigue caída. Esto es CRÍTICO acá: waveform reactiva,
+   magnético, marquee, pin, contadores, preloader son 100% visuales/interactivos. Verifiqué estructura + SSR +
+   typecheck + 0 warnings, pero **no vi nada corriendo**. Necesita ojo con browser sí o sí.
+2. **Mobile**: mismo riesgo de clipping del pin en <lg; guards puestos, ajuste fino pendiente de browser.
+3. **Coherencia**: las secciones (HowItWorks/Matching/Inferences/Benefits) siguen zinc+emerald sin retheme (E3b);
+   contrastan con hero/nav/stats/footer nuevos. Estado intermedio previsto.
+
+### Cambio de prioridad: E-APP con dictado por voz (humano → orquestador → ejecutor)
+
+- Julian: "/app es ahora todo" + feature nueva: micrófono en el chat que graba y transcribe en
+  vivo (como el dictado de ChatGPT/Claude). Spec agregada a docs/app-ui-plan.md: Web Speech API
+  (es-AR, continuous, interim al textarea), estados de grabación, fallbacks.
+- Orden al ejecutor: cerrar W3-W5 coherente (checkpoint 2 corto) → E-APP: mic PRIMERO, después
+  tema consola/motion/fixes de color. E3b/E4/E5 de landing quedan detrás de E-APP en el roadmap.
+
+### Checkpoint 2 revisado (orquestador): E3-WOW APROBADO
+
+- Todo el alcance completo y verificado (typecheck 0 / warnings 0 / sin ámbar / narrativa =
+  producto real de /app). Pendiente único: verificación visual humana (browsers desconectados).
+- Orden: commit del estado landing antes de E-APP (diffs separados). E-APP en curso (mic primero).

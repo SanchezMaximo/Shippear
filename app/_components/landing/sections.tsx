@@ -10,7 +10,8 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useState } from "react";
+import { LineReveal } from "./reveal";
 
 const STEPS = [
   {
@@ -92,7 +93,7 @@ function SectionHeading({ eyebrow, title, lead }: { eyebrow: string; title: stri
     <Reveal>
       <p className="mb-3 font-mono text-xs uppercase tracking-widest text-emerald-400">{eyebrow}</p>
       <h2 className="max-w-2xl text-balance text-3xl font-semibold tracking-tight text-zinc-50 sm:text-4xl">
-        {title}
+        <LineReveal startOnView>{title}</LineReveal>
       </h2>
       {lead ? <p className="mt-4 max-w-2xl text-pretty text-zinc-400">{lead}</p> : null}
     </Reveal>
@@ -250,9 +251,10 @@ export function FinalCta() {
       <div className="relative mx-auto max-w-3xl px-6 text-center">
         <Reveal>
           <h2 className="text-balance text-4xl font-semibold tracking-tight text-zinc-50 sm:text-5xl">
-            Dejá de tomar notas.
-            <br />
-            <span className="text-emerald-300">Empezá a vender.</span>
+            <LineReveal startOnView>Dejá de tomar notas.</LineReveal>
+            <LineReveal className="text-emerald-300" delay={0.12} startOnView>
+              Empezá a vender.
+            </LineReveal>
           </h2>
           <p className="mx-auto mt-5 max-w-xl text-pretty text-zinc-400">
             Probá el asistente de Kigent con una consulta real y mirá cómo arma la
@@ -273,41 +275,72 @@ export function FinalCta() {
 
 export function LandingNav() {
   return (
-    <header className="sticky top-0 z-50 border-b border-zinc-800/60 bg-zinc-950/70 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-        <Link className="text-lg font-semibold tracking-tight text-zinc-50" href="/">
-          Kigent<span className="text-emerald-400">.</span>
+    <header className="sticky top-0 z-50 border-b border-[color:var(--kg-line)] bg-[var(--kg-ink)]">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
+        <Link
+          className="flex items-center font-mono text-sm font-bold tracking-tight text-[color:var(--kg-text)]"
+          href="/"
+        >
+          KIGENT
+          <motion.span
+            animate={{ opacity: [1, 1, 0, 0] }}
+            aria-hidden
+            className="ml-1 inline-block h-[1.05em] w-[0.5ch] bg-[var(--kg-accent)]"
+            transition={{
+              duration: 1.05,
+              times: [0, 0.5, 0.5, 1],
+              repeat: Number.POSITIVE_INFINITY,
+              ease: "linear",
+            }}
+          />
         </Link>
-        <nav className="hidden items-center gap-8 text-sm text-zinc-400 sm:flex">
-          <a className="transition hover:text-zinc-100" href="#como-funciona">
+        <nav className="hidden items-center gap-8 font-mono text-xs uppercase tracking-wider text-[color:var(--kg-dim)] sm:flex">
+          <a className="transition-colors hover:text-[color:var(--kg-text)]" href="#como-funciona">
             Cómo funciona
           </a>
-          <a className="transition hover:text-zinc-100" href="#matching">
+          <a className="transition-colors hover:text-[color:var(--kg-text)]" href="#matching">
             Matching
           </a>
-          <a className="transition hover:text-zinc-100" href="#beneficios">
+          <a className="transition-colors hover:text-[color:var(--kg-text)]" href="#beneficios">
             Beneficios
           </a>
         </nav>
         <Link
-          className="rounded-full border border-emerald-400/40 px-4 py-2 text-sm font-medium text-emerald-300 transition hover:bg-emerald-400/10"
+          className="border border-[color:var(--kg-accent)] px-4 py-2 font-mono text-xs font-medium uppercase tracking-wider text-[color:var(--kg-accent)] transition-colors hover:bg-[var(--kg-accent)] hover:text-[var(--kg-ink)]"
           href="/app"
         >
-          Abrir el asistente
+          [ Abrir asistente ]
         </Link>
       </div>
     </header>
   );
 }
 
+/** Reloj real del visitante (hora local). Placeholder en SSR para evitar mismatch. */
+function LiveClock() {
+  const [time, setTime] = useState<string | null>(null);
+  useEffect(() => {
+    const tick = () =>
+      setTime(new Date().toLocaleTimeString("es-AR", { hour12: false }));
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+  return <span className="tabular-nums">{time ?? "--:--:--"}</span>;
+}
+
 export function LandingFooter() {
   return (
-    <footer className="border-t border-zinc-800/70 py-10">
-      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 text-sm text-zinc-500 sm:flex-row">
-        <p>
-          Kigent<span className="text-emerald-400">.</span> — AI Property Match
+    <footer className="border-t border-[color:var(--kg-line)] py-10">
+      <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 text-sm text-[color:var(--kg-dim)] sm:flex-row">
+        <p className="font-sans">
+          Kigent<span className="text-[color:var(--kg-accent)]">.</span> — AI Property Match
         </p>
-        <p className="font-mono text-xs">Hecho en hackatón · {new Date().getFullYear()}</p>
+        <p className="flex items-center gap-3 font-mono text-xs">
+          <span className="text-[color:var(--kg-accent)]">consola activa ✓</span>
+          <span aria-hidden>·</span>
+          <LiveClock />
+        </p>
       </div>
     </footer>
   );
