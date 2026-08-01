@@ -19,7 +19,14 @@ import {
 import { cn } from "@/lib/utils";
 import { AgentMessage } from "./agent-message";
 
-const AGENT_NAME = "eve-agent";
+const AGENT_NAME = "Kigent";
+
+/** Arranques típicos de un asesor, para que la pantalla vacía no sea un cursor solo. */
+const EXAMPLE_PROMPTS = [
+  "Cliente busca 3 ambientes en Palermo para alquilar, hasta 900.000 ARS, con cochera.",
+  "Pareja quiere comprar casa en Tigre, hasta USD 250.000, mínimo 3 dormitorios y patio.",
+  "Necesito un local a la calle en Villa Crespo para alquiler comercial, 60 m² o más.",
+];
 
 type AgentStatus = ReturnType<typeof useEveAgent>["status"];
 type CancellationState = "idle" | "requested" | "cancelling";
@@ -129,9 +136,15 @@ export function AgentChat() {
     await agent.send({ message: parts });
   };
 
+  const sendExample = async (text: string) => {
+    if (isBusy) return;
+    prepareTurn();
+    await agent.send({ message: text });
+  };
+
   const composer = (
     <PromptInput onSubmit={handleSubmit}>
-      <PromptInputTextarea placeholder="Send a message…" />
+      <PromptInputTextarea placeholder="Contale a Kigent qué busca tu cliente…" />
       <PromptInputSubmit onStop={requestCancellation} status={submitStatus} />
     </PromptInput>
   );
@@ -152,7 +165,7 @@ export function AgentChat() {
           <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm">
             <AlertCircleIcon className="mt-0.5 size-4 shrink-0 text-destructive" />
             <div>
-              <p className="font-medium">Request failed</p>
+              <p className="font-medium">No se pudo completar el pedido</p>
               <p className="mt-0.5 text-muted-foreground">{errorMessage}</p>
             </div>
           </div>
@@ -192,9 +205,27 @@ export function AgentChat() {
         {isEmpty ? (
           <div className="flex flex-col items-center gap-3 text-center">
             <h1 className="font-medium text-5xl tracking-tighter">{AGENT_NAME}</h1>
+            <p className="text-balance text-muted-foreground text-sm">
+              Contame qué busca tu cliente y armo la propuesta con propiedades de KiteProp.
+            </p>
           </div>
         ) : null}
         <div className="w-full">{composer}</div>
+        {isEmpty ? (
+          <div className="flex w-full flex-col gap-2">
+            {EXAMPLE_PROMPTS.map((prompt) => (
+              <button
+                className="rounded-lg border border-border bg-card px-3 py-2 text-left text-muted-foreground text-sm transition-colors hover:bg-accent hover:text-accent-foreground disabled:opacity-50"
+                disabled={isBusy}
+                key={prompt}
+                onClick={() => void sendExample(prompt)}
+                type="button"
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
     </main>
   );

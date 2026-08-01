@@ -20,13 +20,15 @@ const mono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "eve Next.js Starter",
-  description: "A Next.js starter for eve agents with AI Elements.",
+  title: "Kigent — Asistente de propuestas KiteProp",
+  description:
+    "Asistente para corredores inmobiliarios: busca propiedades en KiteProp, arma la propuesta " +
+    "y se la envía al cliente por email.",
 };
 
 export default function RootLayout({ children }: { readonly children: ReactNode }) {
   return (
-    <html className={cn(sans.variable, mono.variable)} lang="en">
+    <html className={cn(sans.variable, mono.variable)} lang="es-AR">
       <body>
         <TooltipProvider>{children}</TooltipProvider>
       </body>
