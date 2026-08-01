@@ -1,11 +1,12 @@
 "use client";
 
-import { motion, useReducedMotion } from "motion/react";
 import { PhoneOff } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ConsoleShell } from "./console-shell";
 import { PERSONA } from "./landing/persona";
 import { friendlySpeechError, getSpeechCtor, type SpeechRecognitionLike } from "./speech";
+import { useDictation } from "./use-dictation";
 
 const LEVELS = [0.4, 0.85, 0.55, 1, 0.45, 0.75, 0.6, 0.9, 0.35, 0.7, 0.5, 0.8];
 
@@ -37,142 +38,149 @@ export function CallMode({
 }) {
   const reduced = useReducedMotion();
   const [seconds, setSeconds] = useState(0);
+  // Transcripción del asesor (motor: Scribe primero, Web Speech de fallback).
+  const [dictated, setDictated] = useState("");
   const [lines, setLines] = useState<Line[]>([]);
-  const [interim, setInterim] = useState("");
+  const [committed, setCommitted] = useState(0);
   const [clientTyping, setClientTyping] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [fallbackError, setFallbackError] = useState<string | null>(null);
 
-  const recRef = useRef<SpeechRecognitionLike | null>(null);
-  const linesRef = useRef<Line[]>([]);
-  const interimRef = useRef("");
+  const dictation = useDictation(dictated, setDictated);
+
+  const startedRef = useRef(false);
+  const fallbackStartedRef = useRef(false);
   const stoppingRef = useRef(false);
+  const webRecRef = useRef<SpeechRecognitionLike | null>(null);
+  const webBaseRef = useRef("");
   const silenceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const scriptIdxRef = useRef(0);
-  const advisorSinceClientRef = useRef(false);
+  const clientIdxRef = useRef(0);
   const emittingRef = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const pushLine = useCallback((line: Line) => {
-    linesRef.current = [...linesRef.current, line];
-    setLines(linesRef.current);
-  }, []);
+  const liveTail = dictated.slice(committed).trim();
 
-  const emitClientLine = useCallback(() => {
-    if (emittingRef.current) return;
-    if (scriptIdxRef.current >= CLIENT_SCRIPT.length) return;
-    if (!advisorSinceClientRef.current) return;
-    emittingRef.current = true;
-    setClientTyping(true);
-    const idx = scriptIdxRef.current;
-    setTimeout(
-      () => {
-        setClientTyping(false);
-        pushLine({ speaker: "cliente", text: CLIENT_SCRIPT[idx] });
-        scriptIdxRef.current = idx + 1;
-        advisorSinceClientRef.current = false;
-        emittingRef.current = false;
-      },
-      reduced ? 200 : 850,
-    );
-  }, [pushLine, reduced]);
-
-  const armSilence = useCallback(() => {
-    if (silenceRef.current) clearTimeout(silenceRef.current);
-    silenceRef.current = setTimeout(emitClientLine, SILENCE_MS);
-  }, [emitClientLine]);
-
-  // Timer
+  // Timer de la llamada
   useEffect(() => {
     const id = setInterval(() => setSeconds((s) => s + 1), 1000);
     return () => clearInterval(id);
   }, []);
 
-  // Auto-scroll del transcript
+  // Auto-scroll
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
-  }, [lines, interim, clientTyping]);
+  }, [lines, dictated, clientTyping]);
 
-  // Reconocimiento de voz
-  useEffect(() => {
+  // Fallback Web Speech si Scribe no arranca (sin ELEVENLABS_API_KEY → 503).
+  const startWebSpeech = useCallback(() => {
     const Ctor = getSpeechCtor();
     if (!Ctor) {
-      setError("Tu navegador no soporta reconocimiento de voz.");
+      setFallbackError("No hay motor de voz disponible en este navegador.");
       return;
     }
     const rec = new Ctor();
     rec.lang = "es-AR";
     rec.continuous = true;
     rec.interimResults = true;
-
+    webBaseRef.current = dictated;
     rec.onresult = (event) => {
-      let interimText = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const res = event.results[i];
-        const txt = res[0]?.transcript ?? "";
-        if (res.isFinal) {
-          const clean = txt.trim();
-          if (clean) {
-            linesRef.current = [...linesRef.current, { speaker: "asesor", text: clean }];
-            setLines(linesRef.current);
-            advisorSinceClientRef.current = true;
-          }
-        } else {
-          interimText += txt;
-        }
+      let full = "";
+      for (let i = 0; i < event.results.length; i++) {
+        full += event.results[i][0]?.transcript ?? "";
       }
-      interimRef.current = interimText;
-      setInterim(interimText);
-      armSilence();
+      setDictated(webBaseRef.current + full);
     };
     rec.onerror = (event) => {
       const msg = friendlySpeechError(event.error);
-      if (msg) setError(msg);
+      if (msg) setFallbackError(msg);
     };
     rec.onend = () => {
       if (!stoppingRef.current) {
         try {
           rec.start();
         } catch {
-          /* ignore restart race */
+          /* race de reinicio */
         }
       }
     };
-
-    recRef.current = rec;
+    webRecRef.current = rec;
     try {
       rec.start();
     } catch {
       /* ignore */
     }
-    return () => {
-      stoppingRef.current = true;
-      if (silenceRef.current) clearTimeout(silenceRef.current);
-      rec.abort();
-    };
-  }, [armSilence]);
+  }, [dictated]);
 
-  const buildTranscript = useCallback(() => {
-    return [...linesRef.current.map((l) => l.text), interimRef.current]
+  // Arranca Scribe una vez al montar.
+  useEffect(() => {
+    if (startedRef.current) return;
+    startedRef.current = true;
+    dictation.start();
+  }, [dictation]);
+
+  // Si Scribe falló, cae a Web Speech (la demo de voz no puede morir).
+  useEffect(() => {
+    if (fallbackStartedRef.current) return;
+    if (dictation.error && !dictation.isRecording && !dictation.isConnecting) {
+      fallbackStartedRef.current = true;
+      startWebSpeech();
+    }
+  }, [dictation.error, dictation.isRecording, dictation.isConnecting, startWebSpeech]);
+
+  // Detección de pausa: al callar el asesor, responde el guion de Sofía.
+  const onSilence = useCallback(() => {
+    const tail = dictated.slice(committed).trim();
+    if (!tail || clientIdxRef.current >= CLIENT_SCRIPT.length || emittingRef.current) return;
+    emittingRef.current = true;
+    const idx = clientIdxRef.current;
+    setLines((prev) => [...prev, { speaker: "asesor", text: tail }]);
+    setCommitted(dictated.length);
+    setClientTyping(true);
+    setTimeout(
+      () => {
+        setLines((prev) => [...prev, { speaker: "cliente", text: CLIENT_SCRIPT[idx] }]);
+        clientIdxRef.current = idx + 1;
+        setClientTyping(false);
+        emittingRef.current = false;
+      },
+      reduced ? 200 : 850,
+    );
+  }, [dictated, committed, reduced]);
+
+  useEffect(() => {
+    if (silenceRef.current) clearTimeout(silenceRef.current);
+    if (dictated.slice(committed).trim()) {
+      silenceRef.current = setTimeout(onSilence, SILENCE_MS);
+    }
+    return () => {
+      if (silenceRef.current) clearTimeout(silenceRef.current);
+    };
+  }, [dictated, committed, onSilence]);
+
+  const teardown = useCallback(() => {
+    stoppingRef.current = true;
+    if (silenceRef.current) clearTimeout(silenceRef.current);
+    dictation.stop();
+    webRecRef.current?.abort();
+  }, [dictation]);
+
+  useEffect(() => () => teardown(), [teardown]);
+
+  const finish = useCallback(() => {
+    teardown();
+    const transcript = [...lines.map((l) => l.text), liveTail]
       .map((t) => t.trim())
       .filter(Boolean)
       .join(" ");
-  }, []);
-
-  const finish = useCallback(() => {
-    stoppingRef.current = true;
-    if (silenceRef.current) clearTimeout(silenceRef.current);
-    recRef.current?.stop();
-    onFinish(buildTranscript());
-  }, [buildTranscript, onFinish]);
+    onFinish(transcript);
+  }, [teardown, lines, liveTail, onFinish]);
 
   const cancel = useCallback(() => {
-    stoppingRef.current = true;
-    if (silenceRef.current) clearTimeout(silenceRef.current);
-    recRef.current?.abort();
+    teardown();
     onClose();
-  }, [onClose]);
+  }, [teardown, onClose]);
 
-  const empty = lines.length === 0 && !interim && !clientTyping && !error;
+  const empty = lines.length === 0 && !liveTail && !clientTyping && !fallbackError;
+  const first = PERSONA.cliente.split(" ")[0].toLowerCase();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[oklch(0.145_0_0_/_0.96)] p-4">
@@ -184,7 +192,7 @@ export function CallMode({
       >
         <ConsoleShell
           subLeft={`Asesor: ${PERSONA.asesor}`}
-          subRight="KiteProp"
+          subRight={dictation.isRecording ? "Scribe" : "voz"}
           timer={
             <span className="font-mono text-xs tabular-nums text-[color:var(--kg-accent)]">
               {mmss(seconds)}
@@ -215,7 +223,9 @@ export function CallMode({
           >
             {empty ? (
               <p className="text-[color:var(--kg-dim)]">
-                Escuchando la llamada… hablá con tu cliente en altavoz.
+                {dictation.isConnecting
+                  ? "Conectando el micrófono…"
+                  : "Escuchando la llamada… hablá con tu cliente en altavoz."}
               </p>
             ) : null}
             {lines.map((line, i) => (
@@ -228,21 +238,19 @@ export function CallMode({
                 key={`${i}-${line.text}`}
               >
                 <span className="text-[color:var(--kg-accent)]">
-                  &gt;{line.speaker === "cliente" ? PERSONA.cliente.split(" ")[0].toLowerCase() : "asesor"}:
+                  &gt;{line.speaker === "cliente" ? first : "asesor"}:
                 </span>{" "}
                 {line.text}
               </p>
             ))}
-            {interim ? (
-              <p className="text-[color:var(--kg-dim)]/70">
-                <span className="text-[color:var(--kg-accent)]">&gt;asesor:</span> {interim}
+            {liveTail ? (
+              <p className="text-[color:var(--kg-dim)]">
+                <span className="text-[color:var(--kg-accent)]">&gt;asesor:</span> {liveTail}
               </p>
             ) : null}
             {clientTyping ? (
               <p className="flex items-center gap-2 text-[color:var(--kg-dim)]">
-                <span className="text-[color:var(--kg-accent)]">
-                  &gt;{PERSONA.cliente.split(" ")[0].toLowerCase()}:
-                </span>
+                <span className="text-[color:var(--kg-accent)]">&gt;{first}:</span>
                 <motion.span
                   animate={reduced ? undefined : { opacity: [1, 1, 0, 0] }}
                   aria-hidden
@@ -251,7 +259,7 @@ export function CallMode({
                 />
               </p>
             ) : null}
-            {error ? <p className="text-destructive">{error}</p> : null}
+            {fallbackError ? <p className="text-destructive">{fallbackError}</p> : null}
           </div>
 
           {/* Acciones */}

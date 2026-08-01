@@ -1,5 +1,6 @@
 // Helpers y tipado mínimo de la Web Speech API (webkit no está en lib.dom).
-// Compartido por el dictado corto (mic-button) y el modo llamada (call-mode).
+// Fallback de voz del modo llamada (call-mode) cuando Scribe/ElevenLabs no está
+// disponible (sin ELEVENLABS_API_KEY la ruta /api/scribe-token da 503).
 
 export interface SpeechAlternative {
   readonly transcript: string;

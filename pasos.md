@@ -492,3 +492,41 @@ en ese caso hace el `agent.send` real con el mensaje enmarcado. El chat de texto
   recablea a useDictation (Scribe primero), restyle del dictation-button al look consola.
 - ⚠️ Para dictado real hace falta ELEVENLABS_API_KEY en .env.local (pedírsela a Maximo);
   sin key el dictado se deshabilita solo (503) y la demo guionada sigue andando.
+
+### E-MERGE — reporte ejecutor (term_95462549)
+
+**Estado: merge de origin/main (Scribe del compañero) + nuestra UI remontada = COMPLETO.**
+Verificado: typecheck exit 0 · **0 warnings** · `/app` y `/` → 200 · `npm install` OK (había red).
+
+**Merge:** `git merge origin/main` (621fd1b, dictado con ElevenLabs Scribe). Conflicto **solo en
+`agent-chat.tsx`** (como se esperaba); `package.json`/`package-lock.json` los cambiaron solo ellos → auto.
+
+**Resolución del conflicto (agent-chat.tsx), integrando AMBOS:**
+- Imports: nuestros (CallMode/ConsoleShell/CallDemoResponse/PERSONA) + su `DictationButton`. Saqué
+  `MicButton`/`isSpeechSupported`/`InputGroupButton`/`useEffect` (ya no usados).
+- Estado: saqué `micState`/`speechSupported`; mantuve `callOpen`/`demoActive`; sumé su
+  `stopDictationRef`/`dictationError`.
+- `errorMessage`: combinado → `cancellationError ?? agent.error?.message ?? dictationError`.
+- Composer: **su `DictationButton`** (textarea `pr-22`) + submit. Su `handleSubmit` corta el mic al enviar (mergeó solo).
+- Error state: **nuestro estilo consola** (border recto, mono, cuadradito) + **su título condicional** (dictado vs pedido).
+- Disparo del modo llamada: botón en el **header** (`▸ Llamada`) cuando hay conversación, y `Iniciar llamada` en el empty state (ambos abren `CallMode`). Evita chocar con su botón absoluto del composer.
+
+**Tarea 2 — mic-button borrado** (`git rm`); **`speech.ts` conservado** como fallback de voz del modo llamada.
+
+**Tarea 3 — rewire de call-mode.tsx:** ahora usa **`useDictation(dictated, setDictated)` (Scribe) como motor
+primario**; si Scribe falla (503 sin `ELEVENLABS_API_KEY`, `dictation.error` + no recording), **cae a Web Speech**
+(`speech.ts`) que escribe en el mismo `dictated`. Modelo value-based: `dictated` crece, `committed` marca el
+límite ya volcado a líneas, `liveTail` = lo nuevo; en cada pausa (2s) se commitea la línea del asesor y responde
+el guion de Sofía. La demo de voz **no puede morir** por falta de key. Subheader muestra el motor activo (Scribe/voz).
+
+**Tarea 4 — restyle de dictation-button.tsx:** al look consola (rectos `rounded-none`, estado grabando en
+**emerald** en vez de destructive). **Lógica intacta** (useDictation/toggle/stop/estados sin tocar).
+
+**Tarea 5 — `npm install`:** corrió con **exit 0** (el sandbox tenía red); `@elevenlabs/react` instalado.
+
+**⚠️ Pendientes honestos:**
+1. **Sin prueba de voz en vivo** — Scribe (requiere key + red del browser) y Web Speech son 100% browser + micrófono;
+   la extensión sigue caída. Verifiqué typecheck + 0 warnings + SSR + resolución del merge, pero **no dicté ni corrí
+   una llamada real**. El rewire sigue el contrato del hook; queda prueba humana (dictado corto, y modo llamada con y sin key).
+2. **Layout del `DictationButton`** (absoluto `right-12`) + submit: sin browser no confirmé el alineado fino con el restyle.
+3. **Demo guionada (DEMO_MODE)** sigue igual: al cortar la llamada, respuesta simulada; verificado estructuralmente.
