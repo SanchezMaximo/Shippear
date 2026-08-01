@@ -2,6 +2,7 @@ import { defineTool } from "eve/tools";
 import { always } from "eve/tools/approval";
 import { Resend } from "resend";
 import { z } from "zod";
+import { DEMO_NOTICE, isDemoMode } from "../lib/demo-catalog";
 import { describeLocation, formatPrice } from "../lib/kiteprop";
 import { proposalFileName, renderProposalPdf } from "../lib/proposal-pdf";
 import type { EnrichedProposal } from "../lib/proposal";
@@ -107,7 +108,12 @@ function renderEmailHtml(proposal: EnrichedProposal): string {
     .map((item) => `<li>${escapeHtml(item)}</li>`)
     .join("");
 
+  const demoBanner = isDemoMode()
+    ? `<p style="background:#fdeded;border-left:4px solid #b32121;color:#b32121;font-weight:600;padding:10px 14px">${escapeHtml(DEMO_NOTICE)}</p>`
+    : "";
+
   return `<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:15px;line-height:1.55;color:#1c1f26;max-width:640px">
+    ${demoBanner}
     <p>Hola ${escapeHtml(proposal.clientName)},</p>
     <p>${escapeHtml(proposal.clientBrief)}</p>
     <p>Te comparto las opciones que seleccionamos para vos:</p>
@@ -137,6 +143,7 @@ function renderEmailText(proposal: EnrichedProposal): string {
     .join("\n\n");
 
   return [
+    ...(isDemoMode() ? [DEMO_NOTICE, ""] : []),
     `Hola ${proposal.clientName},`,
     "",
     proposal.clientBrief,

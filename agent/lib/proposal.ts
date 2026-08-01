@@ -4,6 +4,7 @@
  */
 
 import { z } from "zod";
+import { DEMO_NOTICE, isDemoMode } from "./demo-catalog";
 import {
   describeLocation,
   describeSpecs,
@@ -104,6 +105,7 @@ export function renderProposalMarkdown(proposal: EnrichedProposal): string {
   const lines: string[] = [
     `## Propuesta para ${proposal.clientName}`,
     "",
+    ...(isDemoMode() ? [`> ⚠️ ${DEMO_NOTICE}`, ""] : []),
     proposal.clientBrief,
     "",
     `### ${proposal.selections.length} ${proposal.selections.length === 1 ? "opción" : "opciones"}`,

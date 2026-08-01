@@ -11,6 +11,8 @@
  * agente trabaja contra el tipo `Property` y no necesita cambios.
  */
 
+import { findDemoProperty, isDemoMode } from "./demo-catalog";
+
 export type Operation = "venta" | "alquiler" | "alquiler_temporario";
 
 export type Property = {
@@ -190,6 +192,23 @@ export async function searchProperties(
 }
 
 export async function getProperty(id: string, signal?: AbortSignal): Promise<Property> {
+  // En modo demo el catálogo vive en la sesión, no en ninguna API. Este es el
+  // punto por el que `build_proposal` funciona sin credenciales: enrichProposal()
+  // llama acá desde el servidor, y las connection tools del MCP sólo las puede
+  // invocar el modelo.
+  if (isDemoMode()) {
+    const property = findDemoProperty(id);
+
+    if (!property) {
+      throw new Error(
+        `No hay ninguna propiedad simulada con el ID "${id}" en esta sesión. ` +
+          "Buscá con search_properties y armá la propuesta con los IDs que devuelve.",
+      );
+    }
+
+    return property;
+  }
+
   const payload = await request<any>(`/properties/${encodeURIComponent(id)}`, undefined, signal);
   const raw = payload?.data ?? payload?.property ?? payload;
   return normalizeProperty(raw);

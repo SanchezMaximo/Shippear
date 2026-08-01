@@ -1,4 +1,5 @@
 import { defineMcpClientConnection } from "eve/connections";
+import { isDemoMode } from "../lib/demo-catalog";
 
 /**
  * Conexión al MCP de KiteProp: la fuente real de propiedades del CRM.
@@ -108,8 +109,20 @@ export default defineMcpClientConnection({
   headers: {
     "X-API-Key": process.env.KITEPROP_API_KEY ?? "",
   },
-  tools: { allow: READ_ONLY_TOOLS },
+  // En modo demo el CRM queda fuera del alcance del modelo: las búsquedas las
+  // atiende el catálogo simulado, y tener las dos fuentes disponibles a la vez
+  // sólo lograría que una propuesta mezcle propiedades reales con inventadas.
+  tools: { allow: isDemoMode() ? [] : READ_ONLY_TOOLS },
   approval: ({ toolName }) => {
+    if (isDemoMode()) {
+      return {
+        type: "denied",
+        reason:
+          "El modo demo está encendido (KIGENT_DEMO), así que KiteProp no se consulta. " +
+          "Buscá con search_properties, que devuelve propiedades simuladas.",
+      };
+    }
+
     if (isReadOnly(toolName)) return "not-applicable";
 
     return {

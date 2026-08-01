@@ -4,6 +4,7 @@
  */
 
 import { PDFDocument, type PDFFont, type PDFPage, rgb, StandardFonts } from "pdf-lib";
+import { DEMO_NOTICE, isDemoMode } from "./demo-catalog";
 import { describeLocation, describeSpecs, formatPrice, humanize } from "./kiteprop";
 import type { EnrichedProposal } from "./proposal";
 
@@ -15,6 +16,8 @@ const INK = rgb(0.11, 0.12, 0.15);
 const MUTED = rgb(0.42, 0.45, 0.5);
 const ACCENT = rgb(0.08, 0.4, 0.75);
 const RULE = rgb(0.86, 0.88, 0.91);
+const WARNING_BG = rgb(0.99, 0.93, 0.93);
+const WARNING_INK = rgb(0.7, 0.13, 0.13);
 
 /**
  * Helvetica usa WinAnsi, que cubre el español pero no todo Unicode. Sustituye
@@ -127,6 +130,21 @@ export async function renderProposalPdf(proposal: EnrichedProposal): Promise<Uin
     { color: MUTED, gap: 6, size: 9.5 },
   );
   rule(16);
+
+  // Franja de demo: el PDF es lo que llega al cliente, así que la advertencia
+  // va arriba de todo y en rojo, no en una nota al pie.
+  if (isDemoMode()) {
+    ensure(34);
+    cursor.page.drawRectangle({
+      color: WARNING_BG,
+      height: 30,
+      width: CONTENT_WIDTH,
+      x: MARGIN,
+      y: cursor.y - 30,
+    });
+    cursor.y -= 9;
+    text(DEMO_NOTICE, { color: WARNING_INK, font: bold, gap: 20, indent: 8, size: 8.5 });
+  }
 
   // Lo que buscás
   text("Lo que nos contaste", { font: bold, gap: 4, size: 12 });

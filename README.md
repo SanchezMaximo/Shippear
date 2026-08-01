@@ -118,6 +118,37 @@ Además de propiedades, las 20 permitidas incluyen contactos y consultas de port
 publicación, métricas del negocio, análisis de precio por m² por zona y feedback de visitas.
 `instructions.md` le dice al agente que las use cuando aporten a la recomendación, no por costumbre.
 
+## Modo demo (sin credenciales de KiteProp)
+
+Para mostrar el flujo completo sin API key del CRM, `KIGENT_DEMO=1` cambia la fuente de
+propiedades: en vez de consultar el MCP, el agente genera propiedades **simuladas** con el mismo
+modelo (`generateObject` del AI SDK contra el AI Gateway), en
+[agent/lib/demo-catalog.ts](agent/lib/demo-catalog.ts).
+
+```bash
+KIGENT_DEMO=1 npm run dev
+```
+
+Qué cambia con el flag encendido:
+
+| | Normal | Demo |
+| --- | --- | --- |
+| Búsqueda | `kiteprop__search_properties` (MCP) | `search_properties` (LLM) |
+| Ficha | `kiteprop__get_property` (MCP) | `search_properties` (LLM) |
+| `build_proposal` | refresca precios contra REST | lee del catálogo de la sesión |
+| Conexión MCP | 20 tools de lectura | `allow: []` + approval que deniega |
+
+Las propiedades se generan **una vez** y se guardan por sesión (`defineState`), así la propuesta
+habla de la misma propiedad con el mismo precio que mostró la búsqueda. `getProperty()` lee de ese
+store en modo demo, que es lo que hace que `build_proposal` funcione sin credenciales: las
+connection tools del MCP sólo las puede invocar el modelo, no el código del servidor.
+
+**Está apagado por defecto y todas las salidas van marcadas.** El resumen en el chat lleva un
+aviso, el PDF abre con una franja roja, el email con un banner, los IDs son `demo-N` y las
+descripciones traen la advertencia embebida. El flujo termina en un mail real a un cliente, y una
+propuesta de departamentos que no existen es un daño concreto para el asesor que la manda — de ahí
+el flag explícito y las marcas. No lo dejes encendido con asesores reales.
+
 ## Evals
 
 ```bash
