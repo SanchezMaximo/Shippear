@@ -480,3 +480,15 @@ en ese caso hace el `agent.send` real con el mensaje enmarcado. El chat de texto
   nadie escuchó la captura en vivo aún (browsers de ambas sesiones caídos).
 - Orden: commit de E-APP → resto del plan (mensajes con motion, tool-calls reales estilo
   consola, error state, reasoning) → E4 landing (favicon/OG/selection/scrollbar/focus).
+
+### E-MERGE: adaptación a los cambios del equipo (humano → orquestador → ejecutor)
+
+- Cambio de planes de Julian: SanchezMaximo pusheó 621fd1b — dictado con ElevenLabs Scribe v2
+  Realtime (hook use-dictation + dictation-button + /api/scribe-token + deps). Su motor pasa a
+  ser la base; nuestra UI (ConsoleShell, modo llamada, demo guionada, tema) se remonta encima.
+- Resguardo hecho por el orquestador: WIP commiteado (21e2bd2) + branch backup/kigent-ui-fable.
+- Plan delegado: merge de origin/main (conflicto esperado solo en agent-chat.tsx), mic-button
+  nuestro se borra, speech.ts queda como fallback del modo llamada sin key, call-mode se
+  recablea a useDictation (Scribe primero), restyle del dictation-button al look consola.
+- ⚠️ Para dictado real hace falta ELEVENLABS_API_KEY en .env.local (pedírsela a Maximo);
+  sin key el dictado se deshabilita solo (503) y la demo guionada sigue andando.
