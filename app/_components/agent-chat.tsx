@@ -3,7 +3,6 @@
 import type { UserContent } from "ai";
 import { Client, type MessageStreamEvent } from "eve/client";
 import { useEveAgent } from "eve/react";
-import { PhoneIcon } from "lucide-react";
 import { motion } from "motion/react";
 import { useCallback, useRef, useState } from "react";
 import {
@@ -20,19 +19,11 @@ import {
 } from "@/components/ai-elements/prompt-input";
 import { cn } from "@/lib/utils";
 import { AgentMessage } from "./agent-message";
-import { CallMode } from "./call-mode";
 import { ConsoleShell } from "./console-shell";
-import { CallDemoResponse } from "./demo-response";
 import { DictationButton } from "./dictation-button";
 import { PERSONA } from "./landing/persona";
 
 const AGENT_NAME = "Kigent";
-
-/**
- * Modo demo: sin AI_GATEWAY_API_KEY el agente no responde, así que la respuesta a una
- * llamada se simula (guionada). El otro equipo lo apaga poniéndolo en false al conectar keys.
- */
-const DEMO_MODE = true;
 
 /** Arranques típicos de un asesor, para que la pantalla vacía no sea un cursor solo. */
 const EXAMPLE_PROMPTS = [
@@ -57,8 +48,6 @@ export function AgentChat() {
   const cancellationRef = useRef<Cancellation>({ requested: false });
   const [cancellationError, setCancellationError] = useState<string>();
   const [cancellationState, setCancellationState] = useState<CancellationState>("idle");
-  const [callOpen, setCallOpen] = useState(false);
-  const [demoActive, setDemoActive] = useState(false);
   const stopDictationRef = useRef<(() => void) | null>(null);
   const [dictationError, setDictationError] = useState<string>();
 
@@ -102,8 +91,8 @@ export function AgentChat() {
   const agent = useEveAgent({ onEvent: handleEvent, session });
   const isBusy = agent.status === "submitted" || agent.status === "streaming";
   const isEmpty = agent.data.messages.length === 0;
-  const restingEmpty = isEmpty && !demoActive;
-  const showConversation = !isEmpty || demoActive;
+  const restingEmpty = isEmpty;
+  const showConversation = !isEmpty;
   const errorMessage = cancellationError ?? agent.error?.message ?? dictationError;
   const submitStatus = isBusy && cancellationState !== "idle" ? "submitted" : agent.status;
 
@@ -164,25 +153,6 @@ export function AgentChat() {
     await agent.send({ message: text });
   };
 
-  const handleCallFinish = async (transcript: string) => {
-    setCallOpen(false);
-    const clean = transcript.trim();
-    if (clean.length === 0) return;
-
-    // Sin keys (DEMO_MODE): respuesta simulada guionada, sin backend.
-    if (DEMO_MODE) {
-      setDemoActive(true);
-      return;
-    }
-
-    const framed =
-      "Terminé una llamada con un cliente. Transcripción de la conversación (asesor y " +
-      `cliente mezclados, inferí quién habla cada cosa): ${clean}. Extraé el perfil de ` +
-      "búsqueda del cliente y buscá propiedades en KiteProp.";
-    prepareTurn();
-    await agent.send({ message: framed });
-  };
-
   const composer = (
     <PromptInputProvider>
       <PromptInput onSubmit={handleSubmit}>
@@ -198,24 +168,14 @@ export function AgentChat() {
 
   return (
     <main className="flex h-dvh flex-col overflow-hidden bg-background text-foreground">
-      {callOpen ? <CallMode onClose={() => setCallOpen(false)} onFinish={handleCallFinish} /> : null}
-
       {showConversation ? (
-        <header className="flex h-14 shrink-0 items-center justify-between gap-3 px-4">
+        <header className="flex h-14 shrink-0 items-center justify-center gap-3 px-4">
           <span className="flex min-w-0 items-center gap-2">
             <span className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
               KIGENT_
             </span>
             <StatusDot status={agent.status} />
           </span>
-          <button
-            aria-label="Iniciar llamada"
-            className="flex items-center gap-2 border border-[color:var(--kg-line)] px-3 py-1.5 font-mono text-[10px] text-[color:var(--kg-dim)] uppercase tracking-wider transition-colors hover:border-[color:var(--kg-accent)] hover:text-[color:var(--kg-accent)]"
-            onClick={() => setCallOpen(true)}
-            type="button"
-          >
-            <PhoneIcon className="size-3.5" /> Llamada
-          </button>
         </header>
       ) : null}
 
@@ -258,7 +218,6 @@ export function AgentChat() {
                 />
               </motion.div>
             ))}
-            {demoActive ? <CallDemoResponse /> : null}
           </ConversationContent>
           <ConversationScrollButton />
         </Conversation>
@@ -303,13 +262,6 @@ export function AgentChat() {
                 </button>
               ))}
             </div>
-            <button
-              className="flex w-full items-center justify-center gap-2 border border-[color:var(--kg-accent)] px-4 py-2.5 font-mono text-xs font-semibold uppercase tracking-wider text-[color:var(--kg-accent)] transition-colors hover:bg-[var(--kg-accent)] hover:text-[var(--kg-ink)]"
-              onClick={() => setCallOpen(true)}
-              type="button"
-            >
-              <PhoneIcon className="size-3.5" /> Iniciar llamada
-            </button>
           </ConsoleShell>
         ) : null}
         <div className="w-full">{composer}</div>

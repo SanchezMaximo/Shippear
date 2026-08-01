@@ -550,3 +550,15 @@ el guion de Sofía. La demo de voz **no puede morir** por falta de key. Subheade
   - Pendientes conocidos: prueba humana del mic en Chrome, ELEVENLABS_API_KEY en .env.local,
     ajuste fino mobile del pin del hero, E4 (favicon/OG) y E5 (build audit) si hay tiempo.
 - Ciclo de orquestación (cron 2min) apagado. Backup de UI propia en branch backup/kigent-ui-fable.
+
+### E-APP — eliminación del modo llamada (ejecutor — term_95462549)
+
+Pedido del humano: sacar el modo llamada completo de /app.
+- Quitado: botón "Iniciar llamada" (empty state) y "Llamada" (header), overlay `CallMode`, estado
+  `callOpen`/`demoActive`, `handleCallFinish`, `DEMO_MODE`, imports huérfanos (PhoneIcon, CallMode, CallDemoResponse).
+- Borrados (verificado con grep que solo los usaba el modo llamada): `call-mode.tsx`, `demo-response.tsx`, `speech.ts`.
+- **Intacto**: dictado de Maximo (`dictation-button`/`use-dictation`/`scribe-token`), `ConsoleShell` + empty state
+  `> esperando consulta`, tema dark, `tool-operation` (lo usa agent-message), mensajes con motion, error state consola.
+- Verificado: typecheck exit 0 · **0 warnings** · `/app` → 200 (sin rastros de "Iniciar/Cortar llamada").
+
+**LISTO PARA PUSH**
