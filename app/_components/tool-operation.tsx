@@ -14,10 +14,13 @@ export function ToolOperation({
   label,
   status,
   detail,
+  running = "buscando…",
 }: {
   label: string;
   status: ToolStatus;
   detail?: string;
+  /** Gerundio mientras corre. Cambia según la tool: buscando, armando, enviando. */
+  running?: string;
 }) {
   const reduced = useReducedMotion();
   return (
@@ -26,7 +29,7 @@ export function ToolOperation({
         <ConsoleDot animated={status === "running"} />
         <span className="text-[color:var(--kg-dim)]">{label}</span>
         {status === "running" ? (
-          <span className="text-[color:var(--kg-dim)]">· buscando…</span>
+          <span className="text-[color:var(--kg-dim)]">· {running}</span>
         ) : status === "error" ? (
           <span className="text-destructive">· error</span>
         ) : (

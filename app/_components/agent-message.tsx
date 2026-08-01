@@ -18,6 +18,7 @@ import { Message, MessageContent, MessageResponse } from "@/components/ai-elemen
 import { Reasoning, ReasoningContent, ReasoningTrigger } from "@/components/ai-elements/reasoning";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { toolLabel } from "./tool-labels";
 import { ToolOperation, type ToolStatus } from "./tool-operation";
 
 export type AgentInputResponse = {
@@ -102,9 +103,10 @@ function AgentMessagePart({
           : part.output !== undefined
             ? "done"
             : "running";
+      const { label, running } = toolLabel(part.toolName);
       return (
         <div className="space-y-2">
-          <ToolOperation label={part.toolName} status={status} />
+          <ToolOperation label={label} running={running} status={status} />
           <InputRequestActions
             canRespond={canRespond}
             onInputResponses={onInputResponses}

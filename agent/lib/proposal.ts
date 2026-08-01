@@ -86,7 +86,7 @@ export async function enrichProposal(
   if (selections.length === 0) {
     throw new Error(
       "Ninguna de las propiedades seleccionadas pudo recuperarse de KiteProp. " +
-        "Verificá los IDs con search_properties antes de armar la propuesta.",
+        "Verificá los IDs con kiteprop__search_properties antes de armar la propuesta.",
     );
   }
 

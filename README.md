@@ -13,7 +13,7 @@ El usuario es siempre el asesor, nunca el cliente final.
 | [eve](https://eve.dev/docs) | Framework del agente: tools, canal HTTP, sesiones durables, evals |
 | Next.js 16 + React 19 | La UI de chat (`app/`) |
 | AI Elements + shadcn/ui | Componentes del chat (`components/`) |
-| KiteProp | API REST del CRM inmobiliario (fuente de toda propiedad) |
+| KiteProp | CRM inmobiliario (fuente de toda propiedad). El agente lo consulta por su MCP |
 | Resend | Envío del email con el PDF |
 | pdf-lib | Render del PDF, sin dependencias nativas |
 
@@ -38,12 +38,13 @@ está en `.env.example`.
 | Variable | Para qué |
 | --- | --- |
 | `AI_GATEWAY_API_KEY` | Acceso al modelo. En Vercel se inyecta solo; en local usá `vercel env pull` o un token de gateway |
-| `KITEPROP_API_URL` | Base de la API de KiteProp, sin barra final |
-| `KITEPROP_API_KEY` | Se manda como `Authorization: Bearer <key>` |
+| `KITEPROP_API_KEY` | API key personal de KiteProp (`kp_…`). El MCP la recibe como `X-API-Key`; el cliente REST, como `Authorization: Bearer` |
+| `KITEPROP_API_URL` | Base de la API REST, sin barra final. Solo la usa `build_proposal` |
+| `KITEPROP_MCP_URL` | Opcional. Default `https://mcp.kiteprop.com/mcp` |
 | `RESEND_API_KEY` | Envío del email |
 | `PROPOSAL_FROM_EMAIL` | Remitente con dominio verificado en Resend |
 
-Sin las de KiteProp, `search_properties` y `get_property` fallan con un mensaje explícito y el
+Sin `KITEPROP_API_KEY` el MCP responde 401, las búsquedas fallan con un mensaje explícito y el
 agente le avisa al asesor en vez de inventar propiedades. Sin las de Resend, todo funciona menos el
 último paso.
 
@@ -54,13 +55,13 @@ agent/                      Todo lo que define al agente (eve lo descubre por co
 ├── agent.ts                Modelo y configuración de runtime
 ├── instructions.md         System prompt: identidad, flujo de 5 pasos, reglas
 ├── channels/eve.ts         Canal HTTP y política de auth
+├── connections/
+│   └── kiteprop.ts         MCP de KiteProp, filtrado a las 20 tools de lectura
 ├── tools/                  Cada archivo es una tool; el nombre del archivo es su nombre
-│   ├── search_properties.ts
-│   ├── get_property.ts
 │   ├── build_proposal.ts
 │   └── send_proposal_email.ts
 └── lib/                    Código compartido, sin React ni nada de la UI
-    ├── kiteprop.ts         Cliente tipado de la API + helpers de formato
+    ├── kiteprop.ts         Cliente REST + helpers de formato (solo build_proposal)
     ├── proposal.ts         Esquema Zod de la propuesta y enriquecimiento
     ├── proposal-store.ts   Propuestas aprobadas, por sesión (defineState)
     └── proposal-pdf.ts     Render del PDF
@@ -74,9 +75,9 @@ evals/                      Checks de comportamiento del agente
 
 ## El flujo, y por qué está armado así
 
-1. `search_properties` — busca en KiteProp. El agente puede llamarla varias veces aflojando
-   criterios, y tiene que decir explícitamente qué relajó.
-2. `get_property` — ficha completa de una propiedad puntual.
+1. `kiteprop__search_properties` — busca en el MCP de KiteProp. El agente puede llamarla varias
+   veces aflojando criterios, y tiene que decir explícitamente qué relajó.
+2. `kiteprop__get_property` — ficha completa de una propiedad puntual.
 3. `build_proposal` — vuelve a consultar KiteProp para tener precios frescos, guarda la propuesta
    enriquecida y devuelve un **`proposalId`** más un resumen en markdown para que el asesor lo
    revise. No manda nada.
@@ -90,6 +91,32 @@ garantizaba que lo enviado fuera lo aprobado. Ahora el contenido se lee tal cual
 cliente recibe exactamente lo que el asesor vio.
 
 Si el asesor pide cambios, el agente vuelve a llamar a `build_proposal` y usa el ID nuevo.
+
+## La conexión MCP de KiteProp
+
+`agent/connections/kiteprop.ts` apunta a `https://mcp.kiteprop.com/mcp` (Streamable HTTP). Autentica
+con el header `X-API-Key`, no con Bearer, así que la key va por `headers` y no por `auth`. El modelo
+nunca ve la URL ni la credencial: descubre las tools con `connection_search` y las llama como
+`kiteprop__<tool>`.
+
+El servidor expone **24 tools; el agente sólo puede usar las 20 de lectura**. Las 4 de escritura
+—`create_contact`, `create_message`, `create_visit_feedback`, `update_property_status`— quedan
+afuera. Kigent consulta el CRM, no lo edita: una escritura accidental sobre el CRM de la
+inmobiliaria es un daño real y difícil de revertir.
+
+El límite se aplica en dos capas independientes:
+
+1. **`tools.allow`** con las 20 de lectura. El modelo no ve las otras: no aparecen en
+   `connection_search` ni gastan contexto.
+2. **`approval`**, que deniega automáticamente cualquier tool cuyo nombre no empiece con un verbo de
+   lectura (`search`, `get`, `list`, `compare`, …). No le pregunta al asesor: deniega y explica.
+
+La capa 1 sola alcanzaría hoy, pero depende de que alguien mantenga la lista a mano cada vez que
+KiteProp agrega tools. La capa 2 cubre ese hueco sin depender de nadie.
+
+Además de propiedades, las 20 permitidas incluyen contactos y consultas de portales, estado de
+publicación, métricas del negocio, análisis de precio por m² por zona y feedback de visitas.
+`instructions.md` le dice al agente que las use cuando aporten a la recomendación, no por costumbre.
 
 ## Evals
 
