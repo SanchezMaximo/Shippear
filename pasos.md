@@ -530,3 +530,23 @@ el guion de Sofía. La demo de voz **no puede morir** por falta de key. Subheade
    una llamada real**. El rewire sigue el contrato del hook; queda prueba humana (dictado corto, y modo llamada con y sin key).
 2. **Layout del `DictationButton`** (absoluto `right-12`) + submit: sin browser no confirmé el alineado fino con el restyle.
 3. **Demo guionada (DEMO_MODE)** sigue igual: al cortar la llamada, respuesta simulada; verificado estructuralmente.
+
+### PUSH: UI visible para el equipo (orquestador)
+
+- Pedido de Julian. Merge cerrado por el orquestador (npm install + typecheck verde + sin
+  markers) y pusheado: origin/main = 3298e4e. Incluye landing completa, /app consola + modo
+  llamada + demo guionada, y el motor Scribe de Maximo integrado. Ejecutor retoma el cierre
+  fino del rewire/restyle como commits nuevos.
+
+## Cierre de la jornada (orquestador)
+
+- Julian da por terminado nuestro lado. Estado final pusheado en origin/main (3298e4e):
+  - **Landing** `/`: scrollytelling de sesión real (consulta → perfil → kiteprop.search →
+    ranking → propuesta enviada, reloj 00:47), sistema editorial consola (zinc + emerald, sin
+    clichés IA), waveform reactiva, marquee, contadores, CTA magnético, llamada entrante.
+  - **App** `/app`: consola compartida con el hero (ConsoleShell), modo llamada con demo
+    guionada (Sofía responde en las pausas + respuesta simulada del agente, DEMO_MODE),
+    dictado ElevenLabs Scribe de Maximo integrado con fallback Web Speech.
+  - Pendientes conocidos: prueba humana del mic en Chrome, ELEVENLABS_API_KEY en .env.local,
+    ajuste fino mobile del pin del hero, E4 (favicon/OG) y E5 (build audit) si hay tiempo.
+- Ciclo de orquestación (cron 2min) apagado. Backup de UI propia en branch backup/kigent-ui-fable.
