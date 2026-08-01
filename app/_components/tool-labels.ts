@@ -26,8 +26,11 @@ const LABELS: Readonly<Record<string, ToolLabel>> = {
   build_proposal: { label: "Propuesta para el cliente", running: "armando…" },
   send_proposal_email: { label: "Envío al cliente", running: "enviando…" },
 
-  // Tool del framework: eve la usa para descubrir las tools de una conexión
+  // Tools del framework
   connection_search: { label: "Herramientas de KiteProp", running: BUSCANDO },
+  // `ask_question` queda corriendo hasta que el asesor responde: el gerundio
+  // tiene que decir que la pelota está del lado de él, no del agente.
+  ask_question: { label: "Pregunta al asesor", running: "esperando tu respuesta…" },
 
   // KiteProp · propiedades
   kiteprop__search_properties: { label: "Búsqueda de propiedades", running: BUSCANDO },

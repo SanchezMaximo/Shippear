@@ -6,6 +6,7 @@ import type {
   EveMessage,
   EveMessagePart,
 } from "eve/react";
+import { useState } from "react";
 import {
   CheckCircleIcon,
   ExternalLinkIcon,
@@ -17,6 +18,7 @@ import {
 import { Message, MessageContent, MessageResponse } from "@/components/ai-elements/message";
 import { Reasoning, ReasoningContent, ReasoningTrigger } from "@/components/ai-elements/reasoning";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { toolLabel } from "./tool-labels";
 import { ToolOperation, type ToolStatus } from "./tool-operation";
@@ -277,36 +279,97 @@ function InputRequestActions({
     (option) => option.id === inputResponse?.optionId,
   );
 
+  const options = inputRequest.options ?? [];
+  // `ask_question` puede pedir texto libre en vez de opciones: sin `options`, o
+  // con `allowFreeform` para dejar escribir además de elegir. Sin este campo el
+  // pedido queda sin forma de responderse y el turno se cuelga esperando.
+  const acceptsText = options.length === 0 || inputRequest.allowFreeform === true;
+
   return (
     <div className="space-y-3 rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3">
       <p className="text-muted-foreground text-sm">{inputRequest.prompt}</p>
       {inputResponse ? (
         <p className="font-medium text-sm">
-          Responded: {selectedOption?.label ?? inputResponse.text ?? inputResponse.optionId}
+          Respondiste: {selectedOption?.label ?? inputResponse.text ?? inputResponse.optionId}
         </p>
       ) : (
-        <div className="flex flex-wrap gap-2">
-          {inputRequest.options?.map((option) => (
-            <Button
-              disabled={!canRespond}
-              key={option.id}
-              onClick={() => {
-                void onInputResponses([
-                  {
-                    optionId: option.id,
-                    requestId: inputRequest.requestId,
-                  },
-                ]);
+        <div className="space-y-3">
+          {options.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {options.map((option) => (
+                <Button
+                  disabled={!canRespond}
+                  key={option.id}
+                  onClick={() => {
+                    void onInputResponses([
+                      { optionId: option.id, requestId: inputRequest.requestId },
+                    ]);
+                  }}
+                  size="sm"
+                  type="button"
+                  variant={option.style === "danger" ? "destructive" : "default"}
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+          ) : null}
+          {acceptsText ? (
+            <FreeformInputResponse
+              canRespond={canRespond}
+              onSubmit={(text) => {
+                void onInputResponses([{ requestId: inputRequest.requestId, text }]);
               }}
-              size="sm"
-              type="button"
-              variant={option.style === "danger" ? "destructive" : "default"}
-            >
-              {option.label}
-            </Button>
-          ))}
+            />
+          ) : null}
         </div>
       )}
+    </div>
+  );
+}
+
+/** Campo de respuesta libre. Enter envía; Shift+Enter hace salto de línea. */
+function FreeformInputResponse({
+  canRespond,
+  onSubmit,
+}: {
+  readonly canRespond: boolean;
+  readonly onSubmit: (text: string) => void;
+}) {
+  const [text, setText] = useState("");
+  const trimmed = text.trim();
+
+  const submit = () => {
+    if (trimmed.length === 0 || !canRespond) return;
+    onSubmit(trimmed);
+    setText("");
+  };
+
+  return (
+    <div className="space-y-2">
+      <Textarea
+        className="min-h-20 bg-background/60"
+        disabled={!canRespond}
+        onChange={(event) => setText(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            submit();
+          }
+        }}
+        placeholder="Escribí tu respuesta…"
+        value={text}
+      />
+      <div className="flex justify-end">
+        <Button
+          disabled={!canRespond || trimmed.length === 0}
+          onClick={submit}
+          size="sm"
+          type="button"
+        >
+          Responder
+        </Button>
+      </div>
     </div>
   );
 }
