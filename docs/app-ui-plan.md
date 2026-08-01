@@ -23,7 +23,24 @@
 rectos (radius 2–4px), mono para datos/estados, editorial para el texto del agente. Elegante,
 no hacker (regla maestra del guion).
 
-## Feature nueva prioritaria: dictado por voz (pedido de Julian)
+## Evolución (pedido de Julian, v2): MODO LLAMADA — no solo dictado
+
+La visión completa: **fingir una charla telefónica** con el cliente (altavoz) y que Kigent
+escuche a los dos — igual que la animación del hero de la landing — y en base a eso haga su
+funcionalidad (perfil → KiteProp → propuesta).
+
+- **UI "llamada en curso"** (calcada de la consola del hero): timer corriendo, waveform viva,
+  transcript acumulándose en vivo (interim + líneas finales apiladas).
+- **Botón "Iniciar llamada"** en el chat (además del dictado corto, o como modo del mismo mic).
+  Al cortar ("Cortar llamada"), el transcript completo se envía al agente **enmarcado**:
+  "Terminé una llamada con un cliente. Transcripción (asesor y cliente mezclados, inferí quién
+  habla): […] — Extraé el perfil de búsqueda y buscá propiedades en KiteProp."
+- **Sin diarización real** (Web Speech API no separa hablantes): el LLM infiere los roles por
+  contenido — aclararlo en el framing. Suficiente y honesto para la demo.
+- **Payoff**: la respuesta del agente (perfil + matches) es el mismo flujo del chat de siempre.
+- Continuidad total: landing (animación) → /app (real). Es LA demo de la hackatón.
+
+## Feature base: dictado por voz (pedido de Julian, v1)
 
 Como el dictado de ChatGPT/Claude: **botón de micrófono en el composer** que graba la
 conversación y transcribe en vivo al textarea.

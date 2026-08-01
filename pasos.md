@@ -366,3 +366,117 @@ y su amplitud (scaleY del contenedor) responde a `useVelocity(scrollY)` suavizad
 - Todo el alcance completo y verificado (typecheck 0 / warnings 0 / sin ámbar / narrativa =
   producto real de /app). Pendiente único: verificación visual humana (browsers desconectados).
 - Orden: commit del estado landing antes de E-APP (diffs separados). E-APP en curso (mic primero).
+
+### Copy: "CRM" → "KiteProp" en todo (humano)
+
+- Pedido de Julian. 7 ubicaciones detectadas por grep (hero, sections, metadata) enviadas al
+  ejecutor con la línea exacta; gramática adaptada, no reemplazo ciego.
+
+### E-APP checkpoint 1 — reporte ejecutor (term_95462549)
+
+**Estado: dictado por voz + tema dark base = COMPLETO.** Lógica eve intacta.
+Verificado: typecheck exit 0 · **0 warnings** · `/app` → 200 dark · `/` → 200 · sin errores nuevos.
+
+**0. Dictado por voz (prioridad):** `app/_components/mic-button.tsx` (nuevo).
+- Web Speech API del browser (`SpeechRecognition`/`webkitSpeechRecognition`), `lang es-AR`, `continuous`,
+  `interimResults`. Tipado mínimo local (webkit no está en lib.dom).
+- Escribe el transcript **en vivo** en el textarea vía `usePromptInputController().textInput.setInput()`.
+  Para eso envolví el composer en `<PromptInputProvider>` (mínima intervención, **sin tocar** ai-elements):
+  con provider el textarea queda controlado y el submit ya lee/limpia `controller.textInput` (verificado en el código).
+- Al frenar, el texto queda editable y se envía normal. Estado visible: dot emerald pulsante + "escuchando…"
+  arriba del composer (`agent-chat.tsx`, lifted state `micState`).
+- Fallbacks: sin soporte → botón oculto (`return null`); permiso denegado → mensaje claro.
+
+**1. Tema dark consola en `/app`:** `app/app/page.tsx` envuelve `AgentChat` en un wrapper que remapea los
+tokens shadcn a la paleta de la landing (near-black `0.145 0 0` + emerald `0.77 0.15 165`, `--radius: 3px`),
+`color-scheme: dark`, scopeado (no toca el tema del resto del sitio). El chat existente hereda el dark sin cambios de lógica.
+
+**6 (parcial). Colores vetados:** `agent-message.tsx` — `yellow-500` (VETADO) → emerald en InputRequest;
+`blue-500` (auth pendiente) → neutral (`border-border`/`bg-muted`). Radios: el token `--radius: 3px` achica los `rounded-*`.
+
+**Copy CRM → KiteProp:** aplicado en `page.tsx`, `hero.tsx` (párrafo + header), `sections.tsx` (x4), gramática natural.
+Grep: no queda "CRM" visible (solo un comentario en `hero.tsx`).
+
+**Chat sigue igual:** examples (`sendExample` va directo a `agent.send`), cancelar (`onStop`) y submit intactos;
+el provider solo cambia de dónde sale el value del textarea (verificado: submit usa `controller.textInput.value`).
+
+**⚠️ Pendientes honestos:**
+1. **Mic sin probar en vivo:** la Web Speech API es browser-only y la extensión de Chrome sigue caída, así que
+   **no pude dictar de verdad** (permisos, interim, es-AR). Verifiqué estructura + typecheck + SSR + 0 warnings.
+   Necesita prueba humana con micrófono (y es Chrome/Safari; Firefox no soporta SR).
+2. **Send real sin keys:** sin `AI_GATEWAY_API_KEY` el agente no responde; verifiqué empty state + que la lógica no se tocó.
+3. **Layout del botón mic** dentro del InputGroup: quedó como hermano del submit; sin browser no confirmé el alineado fino.
+4. Falta el resto de E-APP (header KIGENT_, empty state con fichas, mensajes con motion, tool-calls vivos, error state) → próximos pasos.
+
+### E-APP v2: modo llamada (humano → orquestador → ejecutor)
+
+- A Julian le gustó el rumbo del mic y evolucionó el pedido: fingir una charla telefónica
+  (altavoz) donde Kigent escucha a asesor Y cliente — como la animación del hero — y al cortar
+  el agente procesa todo (perfil → KiteProp → propuesta). Spec en app-ui-plan.md ('MODO LLAMADA').
+- Diseño: UI de llamada calcada de la consola del hero (timer, waveform, transcript vivo);
+  transcript se envía enmarcado al agente al cortar; roles inferidos por el LLM (Web Speech API
+  no diariza). Continuidad landing→producto: es LA demo de la hackatón.
+
+### E-APP v3: demo guionada (humano → orquestador → ejecutor)
+
+- Julian para el MVP: "fingí que el agente le responde como si fuera otra persona". Doble
+  simulación integrada al modo llamada: (A) durante la llamada, el cliente (Sofía) responde
+  solo con líneas guionadas al detectar pausa del asesor — demo sin actuar dos voces; (B) al
+  cortar, si no hay keys la respuesta del agente es simulada con streaming (perfil → búsqueda
+  KiteProp visual → ranking → propuesta enviada), tono humano. Marcado como DEMO_MODE apagable;
+  el chat de texto normal sigue con send real.
+
+### Referencia visual para /app (captura del humano)
+
+- Julian mandó captura de la consola del hero como objetivo: /app (al abrir y en modo llamada)
+  debe verse casi idéntico. Orden al ejecutor: extraer el chrome de la consola a un componente
+  compartido (console-shell) usado por hero y /app — paridad exacta sin duplicación; empty
+  state "> esperando consulta", timer, waveform y transcript dentro del mismo marco.
+
+### E-APP checkpoint 2 — reporte ejecutor (term_95462549)
+
+**Estado: MODO LLAMADA + demo guionado + paridad ConsoleShell = COMPLETO.**
+Verificado: typecheck exit 0 · **0 warnings** · `/app` y `/` → 200 · panel consola en SSR de /app · sin errores/hidratación.
+Lógica eve intacta; chat de texto normal sin tocar.
+
+**Paridad hero ↔ /app (`console-shell.tsx`, nuevo):** extraje el chrome de la consola (border 1px + header
+[dot ■ · título mono · timer emerald] + subheader [Asesor / KiteProp] + body) a `ConsoleShell` y lo uso en
+AMBOS lados. **Refactoricé el hero** para usarlo (SSR verificado, scrollytelling intacto). En `/app` el empty
+state ES ese panel: `Kigent · asistente` / `esperando consulta ▊` / `Asesor: Martín · KiteProp` / timer `00:00`,
+ejemplos como fichas `> …` + botón `Iniciar llamada`.
+
+**MODO LLAMADA (`call-mode.tsx`, nuevo):** overlay calcado de la consola (ConsoleShell + timer corriendo +
+waveform viva + transcript en vivo). SpeechRecognition `es-AR continuous interimResults`; finales apilados +
+interim; auto-restart en `onend` (algunos browsers cortan por silencio). Botones `Cancelar` / `Cortar llamada`.
+
+**Contraparte guionada (A):** cada pausa del asesor (~2s de silencio, `armSilence`) dispara la próxima línea de
+Sofía del `CLIENT_SCRIPT` (6 líneas del guion), con typing ▊ breve antes. Secuencial, sin NLP. Así el humano
+demuestra la llamada sin actuar dos voces.
+
+**Respuesta simulada (B) (`demo-response.tsx`, nuevo):** al cortar, si `DEMO_MODE` (const, sin keys) la
+respuesta del agente se reproduce guionada con streaming (typing char-a-char, tono de colega): resumen del
+perfil → tool-call `kiteprop.search · buscando… → 12 propiedades ✓` (~2s) → ranking (Pellegrini 97%…) →
+`Le mandé la propuesta a Sofía por mail ✓`. Se apaga poniendo `DEMO_MODE = false` cuando conecten keys;
+en ese caso hace el `agent.send` real con el mensaje enmarcado. El chat de texto normal siempre intenta el send real.
+
+**Dictado corto (v1) sigue:** botón mic en el composer (refactor a `speech.ts` compartido). Tema dark base ya estaba.
+
+**Colores vetados** ya corregidos (yellow-500→emerald, blue-500→neutral); radios vía `--radius: 3px`.
+
+**⚠️ Pendientes honestos (importante):**
+1. **NADA de esto está probado en vivo** — la extensión de Chrome sigue caída y todo el modo llamada es
+   micrófono + browser puro. Verifiqué typecheck + 0 warnings + SSR + estructura, pero **no escuché la captura,
+   ni vi el guion de Sofía dispararse en las pausas, ni el streaming de la respuesta simulada**. Necesita prueba
+   humana con micrófono (Chrome/Safari) sí o sí. Es lo más crítico de todo lo que hice.
+2. **Send real** requiere keys (DEMO_MODE cubre la demo mientras tanto).
+3. **Layout de los 3 botones** (mic + teléfono + submit) en el InputGroup: sin browser no confirmé el alineado.
+4. Falta el resto del plan E-APP (mensajes reales con motion, tool-calls reales como consola, error state, reasoning) → próximos pasos.
+
+### Checkpoint 2 de E-APP revisado (orquestador): APROBADO
+
+- Modo llamada completo (ConsoleShell compartido, overlay con timer/waveform/transcript, Sofía
+  guionada por pausas, respuesta simulada con streaming, DEMO_MODE apagable). Typecheck 0 /
+  warnings 0 / eve intacto. ⚠️ CRÍTICO pendiente: prueba humana con micrófono real en Chrome —
+  nadie escuchó la captura en vivo aún (browsers de ambas sesiones caídos).
+- Orden: commit de E-APP → resto del plan (mensajes con motion, tool-calls reales estilo
+  consola, error state, reasoning) → E4 landing (favicon/OG/selection/scrollbar/focus).

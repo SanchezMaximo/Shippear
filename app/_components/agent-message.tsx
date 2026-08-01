@@ -172,7 +172,7 @@ function AuthorizationPrompt({ part }: { readonly part: EveAuthorizationPart }) 
           ? "border-emerald-500/30 bg-emerald-500/5"
           : isCompleted
             ? "border-destructive/30 bg-destructive/5"
-            : "border-blue-500/30 bg-blue-500/5",
+            : "border-border bg-muted/40",
       )}
     >
       <div className="flex items-start gap-3">
@@ -183,7 +183,7 @@ function AuthorizationPrompt({ part }: { readonly part: EveAuthorizationPart }) 
               ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
               : isCompleted
                 ? "bg-destructive/10 text-destructive"
-                : "bg-blue-500/10 text-blue-700 dark:text-blue-300",
+                : "bg-muted text-muted-foreground",
           )}
         >
           <Icon className="size-4" />
@@ -283,7 +283,7 @@ function InputRequestActions({
   );
 
   return (
-    <div className="space-y-3 rounded-md border border-yellow-500/30 bg-yellow-500/5 p-3">
+    <div className="space-y-3 rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3">
       <p className="text-muted-foreground text-sm">{inputRequest.prompt}</p>
       {inputResponse ? (
         <p className="font-medium text-sm">

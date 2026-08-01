@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   title: "Kigent — La IA que escucha la llamada y encuentra la propiedad",
   description:
     "Kigent escucha la llamada con tu cliente, arma el perfil de búsqueda en tiempo real " +
-    "y devuelve un ranking de propiedades de tu CRM antes de cortar.",
+    "y devuelve un ranking de propiedades de KiteProp antes de cortar.",
 };
 
 // Paleta de la consola: near-black NEUTRO (zinc) + un único acento emerald.

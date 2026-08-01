@@ -11,6 +11,7 @@ import {
 } from "motion/react";
 import Link from "next/link";
 import { type ReactNode, useRef } from "react";
+import { ConsoleShell } from "../console-shell";
 import { Magnetic } from "./magnetic";
 import { PERSONA } from "./persona";
 import { LineReveal } from "./reveal";
@@ -173,7 +174,7 @@ export function Hero() {
 
             <p className="relative mt-6 max-w-md font-sans text-base leading-relaxed text-[color:var(--kg-dim)]">
               El asesor le pasa a Kigent lo que busca {PERSONA.cliente.split(" ")[0]} y, en
-              menos de un minuto, recibe un ranking de propiedades de tu CRM y la propuesta
+              menos de un minuto, recibe un ranking de propiedades de KiteProp y la propuesta
               lista para enviar. Sin notas, sin formularios, sin oportunidades perdidas.
             </p>
 
@@ -197,37 +198,26 @@ export function Hero() {
 
           {/* Columna derecha: la consola (interfaz real del producto, mono) */}
           <div className="relative min-w-0">
-            <div className="border border-[color:var(--kg-line)] bg-[oklch(0.185_0_0)]">
-              {/* Header */}
-              <div className="flex items-center justify-between gap-3 border-b border-[color:var(--kg-line)] px-5 py-3.5">
-                <span className="flex min-w-0 items-center gap-2 font-mono text-xs uppercase tracking-wider text-[color:var(--kg-text)]">
-                  <motion.span
-                    animate={reduced ? undefined : { opacity: [1, 1, 0.3, 0.3] }}
-                    aria-hidden
-                    className="size-2 shrink-0 bg-[var(--kg-accent)]"
-                    transition={{ duration: 1.4, times: [0, 0.5, 0.5, 1], repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
-                  />
-                  <span className="truncate">Kigent · asistente</span>
-                </span>
-                <span className="flex shrink-0 items-center gap-3">
-                  <motion.span
-                    className="font-mono text-[10px] uppercase tracking-wider text-[color:var(--kg-dim)]"
-                    style={{ opacity: reduced ? 0 : rewOpacity }}
-                  >
-                    ⟲ rew
-                  </motion.span>
-                  <motion.span className="font-mono text-xs tabular-nums text-[color:var(--kg-accent)]">
-                    {reduced ? "00:47" : clock}
-                  </motion.span>
-                </span>
-              </div>
-              <div className="flex items-center justify-between gap-3 border-b border-[color:var(--kg-line)] px-5 py-2 font-mono text-[11px] text-[color:var(--kg-dim)]">
-                <span className="truncate">Asesor: {PERSONA.asesor}</span>
-                <span className="shrink-0">CRM: KiteProp</span>
-              </div>
-
-              {/* Log de la sesión */}
-              <div className="space-y-4 p-5 font-mono text-xs sm:text-sm">
+            <ConsoleShell
+              bodyClassName="space-y-4 p-5 font-mono text-xs sm:text-sm"
+              dotAnimated={!reduced}
+              statusExtra={
+                <motion.span
+                  className="font-mono text-[10px] uppercase tracking-wider text-[color:var(--kg-dim)]"
+                  style={{ opacity: reduced ? 0 : rewOpacity }}
+                >
+                  ⟲ rew
+                </motion.span>
+              }
+              subLeft={`Asesor: ${PERSONA.asesor}`}
+              subRight="KiteProp"
+              timer={
+                <motion.span className="font-mono text-xs tabular-nums text-[color:var(--kg-accent)]">
+                  {reduced ? "00:47" : clock}
+                </motion.span>
+              }
+              title="Kigent · asistente"
+            >
                 {/* Prompt vivo: la consola está lista desde el arranque */}
                 <div className="flex items-center gap-2 text-[11px] text-[color:var(--kg-dim)] sm:text-xs">
                   <span className="text-[color:var(--kg-accent)]">&gt;</span>
@@ -326,8 +316,7 @@ export function Hero() {
                     </span>
                   </span>
                 </ScrollStep>
-              </div>
-            </div>
+            </ConsoleShell>
 
             {/* Indicador de scroll: ver la consulta */}
             {!reduced && (

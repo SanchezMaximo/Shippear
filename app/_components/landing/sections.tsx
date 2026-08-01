@@ -27,7 +27,7 @@ const STEPS = [
   {
     icon: Sparkles,
     title: "Matchea",
-    body: "Cruza el perfil contra tu CRM y devuelve un ranking de propiedades con su porcentaje de compatibilidad, antes de que cortes.",
+    body: "Cruza el perfil contra KiteProp y devuelve un ranking de propiedades con su porcentaje de compatibilidad, antes de que cortes.",
   },
 ];
 
@@ -67,11 +67,11 @@ const INFERENCES = [
 ];
 
 const BENEFITS = [
-  ["Menos tiempo administrativo", "El asesor vende; Kigent toma nota y carga el CRM."],
+  ["Menos tiempo administrativo", "El asesor vende; Kigent toma nota y carga KiteProp."],
   ["Seguimiento consistente", "Cada consulta queda estructurada, no en la memoria de nadie."],
   ["Recomendaciones precisas", "Se terminan las propuestas que no encajan con el cliente."],
   ["Respuesta inmediata", "Del primer llamado a la propuesta en menos de un minuto."],
-  ["Mejor uso del CRM", "Tu stock trabaja solo: cada propiedad encuentra a su cliente."],
+  ["Mejor uso de KiteProp", "Tu stock trabaja solo: cada propiedad encuentra a su cliente."],
   ["Onboarding simple", "Un asesor nuevo propone como uno senior desde el día uno."],
 ] as const;
 
@@ -132,7 +132,7 @@ export function Matching() {
       <div className="mx-auto max-w-6xl px-6">
         <SectionHeading
           eyebrow="Matching inteligente"
-          lead="Kigent consulta tu CRM y explica cada recomendación: qué encaja, qué no, y por qué."
+          lead="Kigent consulta KiteProp y explica cada recomendación: qué encaja, qué no, y por qué."
           title="Un ranking que se defiende solo"
         />
         <div className="mt-12 grid gap-4">
