@@ -4,18 +4,30 @@ import { Resend } from "resend";
 import { z } from "zod";
 import { describeLocation, formatPrice } from "../lib/kiteprop";
 import { proposalFileName, renderProposalPdf } from "../lib/proposal-pdf";
-import { enrichProposal, proposalSchema, type EnrichedProposal } from "../lib/proposal";
+import type { EnrichedProposal } from "../lib/proposal";
+import { loadProposal } from "../lib/proposal-store";
 
 /**
  * El envío queda detrás de `always()`: nada sale al cliente sin que el asesor
  * apruebe explícitamente la propuesta en el chat.
+ *
+ * Recibe un `proposalId`, no la propuesta entera: el contenido se lee tal cual
+ * lo dejó `build_proposal`, así que el cliente recibe literalmente lo que el
+ * asesor aprobó. El modelo no puede alterarlo al reenviarlo, y tampoco se
+ * vuelve a consultar KiteProp — antes, una propiedad despublicada entre la
+ * aprobación y el envío desaparecía del PDF sin que nadie se enterara.
  */
 export default defineTool({
   description:
     "Genera el PDF de la propuesta y se lo envía por email al cliente. Requiere aprobación del " +
-    "asesor antes de ejecutarse. Usá exactamente la misma propuesta que el asesor aprobó en " +
-    "build_proposal.",
-  inputSchema: proposalSchema.extend({
+    "asesor antes de ejecutarse. Pasale el `proposalId` que devolvió build_proposal: se envía " +
+    "esa propuesta exacta. Si el asesor pidió cambios, volvé a llamar a build_proposal y usá el " +
+    "ID nuevo.",
+  inputSchema: z.object({
+    proposalId: z
+      .string()
+      .min(1)
+      .describe("El `proposalId` que devolvió build_proposal para la propuesta que se aprobó."),
     clientEmail: z.email().describe("Email del cliente destinatario."),
     ccAdvisorEmail: z
       .email()
@@ -27,7 +39,7 @@ export default defineTool({
       .describe("Asunto del email. Default: 'Propuesta de propiedades para <cliente>'."),
   }),
   approval: always(),
-  async execute(input, ctx) {
+  async execute({ ccAdvisorEmail, clientEmail, proposalId, subject }) {
     const apiKey = process.env.RESEND_API_KEY;
     const from = process.env.PROPOSAL_FROM_EMAIL;
 
@@ -39,8 +51,7 @@ export default defineTool({
       );
     }
 
-    const { clientEmail, ccAdvisorEmail, subject, ...rest } = input;
-    const proposal = await enrichProposal(rest, ctx.abortSignal);
+    const proposal = loadProposal(proposalId);
     const pdf = await renderProposalPdf(proposal);
     const filename = proposalFileName(proposal);
 
@@ -60,6 +71,7 @@ export default defineTool({
 
     return {
       sent: true,
+      proposalId,
       messageId: data?.id ?? null,
       to: clientEmail,
       cc: ccAdvisorEmail ?? null,

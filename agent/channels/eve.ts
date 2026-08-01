@@ -1,15 +1,26 @@
 import { eveChannel } from "eve/channels/eve";
-import { localDev, placeholderAuth, vercelOidc } from "eve/channels/auth";
+import { localDev, none, vercelOidc } from "eve/channels/auth";
 
+/**
+ * ⚠️ DEMO PÚBLICA: `none()` acepta tráfico anónimo.
+ *
+ * Cualquiera con la URL del deploy puede conversar con Kigent, consultar la API
+ * de KiteProp y aprobar `send_proposal_email`, que manda mails reales vía Resend
+ * con tu API key. El costo y el envío corren por tu cuenta.
+ *
+ * Antes de que esto deje de ser una demo, reemplazá `none()` por el auth de tu
+ * app (Auth.js, Clerk) o por `httpBasic()` si alcanza con usuario y contraseña
+ * compartidos entre los asesores. La lista se recorre en orden: poné tu
+ * autenticador primero y borrá `none()`, que al ser el último acepta todo lo que
+ * no reconocieron los anteriores.
+ */
 export default eveChannel({
   auth: [
-    // Lets the eve TUI and your Vercel deployments reach the deployed agent.
+    // Deja que la TUI de eve y tus deployments de Vercel lleguen al agente.
     vercelOidc(),
-    // Open on localhost for `eve dev` and the REPL; ignored in production.
+    // Abre localhost para `eve dev` y el REPL; se ignora en producción.
     localDev(),
-    // This placeholder will not allow browser requests in production.
-    // Replace it with your app's auth provider, like Auth.js or Clerk,
-    // or use none() for a public demo.
-    placeholderAuth(),
+    // Acceso anónimo explícito. Ver la advertencia de arriba.
+    none(),
   ],
 });
