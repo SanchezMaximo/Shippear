@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import type { CSSProperties } from "react";
 import { Hero } from "@/app/_components/landing/hero";
-import { IncomingCall } from "@/app/_components/landing/incoming-call";
 import { Marquee } from "@/app/_components/landing/marquee";
 import {
   Benefits,
@@ -38,7 +37,6 @@ const theme: CSSProperties = {
 export default function LandingPage() {
   return (
     <div className="min-h-dvh antialiased" style={theme}>
-      <IncomingCall />
       <LandingNav />
       <main>
         <Hero />
