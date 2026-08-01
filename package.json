@@ -15,6 +15,8 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@elevenlabs/elevenlabs-js": "^2.60.0",
+    "@elevenlabs/react": "^1.12.0",
     "@radix-ui/react-use-controllable-state": "^1.2.2",
     "@shikijs/core": "^4.1.0",
     "@shikijs/engine-javascript": "^4.1.0",

@@ -13,11 +13,13 @@ import {
 import {
   PromptInput,
   type PromptInputMessage,
+  PromptInputProvider,
   PromptInputSubmit,
   PromptInputTextarea,
 } from "@/components/ai-elements/prompt-input";
 import { cn } from "@/lib/utils";
 import { AgentMessage } from "./agent-message";
+import { DictationButton } from "./dictation-button";
 
 const AGENT_NAME = "Kigent";
 
@@ -44,6 +46,8 @@ export function AgentChat() {
   const cancellationRef = useRef<Cancellation>({ requested: false });
   const [cancellationError, setCancellationError] = useState<string>();
   const [cancellationState, setCancellationState] = useState<CancellationState>("idle");
+  const stopDictationRef = useRef<(() => void) | null>(null);
+  const [dictationError, setDictationError] = useState<string>();
 
   const cancelTurn = useCallback(
     (turnId: string) => {
@@ -85,7 +89,7 @@ export function AgentChat() {
   const agent = useEveAgent({ onEvent: handleEvent, session });
   const isBusy = agent.status === "submitted" || agent.status === "streaming";
   const isEmpty = agent.data.messages.length === 0;
-  const errorMessage = cancellationError ?? agent.error?.message;
+  const errorMessage = cancellationError ?? agent.error?.message ?? dictationError;
   const submitStatus = isBusy && cancellationState !== "idle" ? "submitted" : agent.status;
 
   const prepareTurn = () => {
@@ -113,6 +117,9 @@ export function AgentChat() {
     const text = message.text.trim();
     if ((text.length === 0 && message.files.length === 0) || isBusy) return;
 
+    // Cortamos el micrófono al enviar: dejarlo abierto mientras el agente
+    // responde sigue facturando audio sin que nadie lo esté leyendo.
+    stopDictationRef.current?.();
     prepareTurn();
 
     if (message.files.length === 0) {
@@ -143,10 +150,16 @@ export function AgentChat() {
   };
 
   const composer = (
-    <PromptInput onSubmit={handleSubmit}>
-      <PromptInputTextarea placeholder="Contale a Kigent qué busca tu cliente…" />
-      <PromptInputSubmit onStop={requestCancellation} status={submitStatus} />
-    </PromptInput>
+    <PromptInputProvider>
+      <PromptInput onSubmit={handleSubmit}>
+        <PromptInputTextarea
+          className="pr-22"
+          placeholder="Contale a Kigent qué busca tu cliente…"
+        />
+        <DictationButton onError={setDictationError} stopRef={stopDictationRef} />
+        <PromptInputSubmit onStop={requestCancellation} status={submitStatus} />
+      </PromptInput>
+    </PromptInputProvider>
   );
 
   return (
@@ -165,7 +178,11 @@ export function AgentChat() {
           <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2.5 text-sm">
             <AlertCircleIcon className="mt-0.5 size-4 shrink-0 text-destructive" />
             <div>
-              <p className="font-medium">No se pudo completar el pedido</p>
+              <p className="font-medium">
+                {errorMessage === dictationError
+                  ? "No se pudo dictar por voz"
+                  : "No se pudo completar el pedido"}
+              </p>
               <p className="mt-0.5 text-muted-foreground">{errorMessage}</p>
             </div>
           </div>
