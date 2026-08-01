@@ -117,7 +117,16 @@ export function AgentChat() {
     }
   };
 
-  const handleSubmit = async (message: PromptInputMessage) => {
+  // El store ya expone sus fallas en `agent.error`; lo único que rechaza acá es
+  // el guard de "turno en curso", que ya cubrimos con `isBusy`.
+  const send = (payload: Parameters<typeof agent.send>[0]) => {
+    agent.send(payload).catch(() => {});
+  };
+
+  // Sin `await`: el composer se limpia recién cuando `onSubmit` resuelve, y
+  // `agent.send` resuelve al terminar el turno. Esperarlo dejaría el texto en
+  // el input durante toda la respuesta (y para siempre si el turno falla).
+  const handleSubmit = (message: PromptInputMessage) => {
     const text = message.text.trim();
     if ((text.length === 0 && message.files.length === 0) || isBusy) return;
 
@@ -127,7 +136,7 @@ export function AgentChat() {
     prepareTurn();
 
     if (message.files.length === 0) {
-      await agent.send({ message: text });
+      send({ message: text });
       return;
     }
 
@@ -144,13 +153,13 @@ export function AgentChat() {
       });
     }
 
-    await agent.send({ message: parts });
+    send({ message: parts });
   };
 
-  const sendExample = async (text: string) => {
+  const sendExample = (text: string) => {
     if (isBusy) return;
     prepareTurn();
-    await agent.send({ message: text });
+    send({ message: text });
   };
 
   const composer = (
@@ -255,7 +264,7 @@ export function AgentChat() {
                   className="block w-full truncate text-left text-[color:var(--kg-dim)] transition-colors hover:text-[color:var(--kg-text)] disabled:opacity-50"
                   disabled={isBusy}
                   key={prompt}
-                  onClick={() => void sendExample(prompt)}
+                  onClick={() => sendExample(prompt)}
                   type="button"
                 >
                   &gt; {prompt}
