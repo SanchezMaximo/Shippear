@@ -99,8 +99,14 @@ function isReadOnly(toolName: string): boolean {
 
 export default defineMcpClientConnection({
   url: process.env.KITEPROP_MCP_URL ?? "https://mcp.kiteprop.com/mcp",
-  description:
-    "KiteProp, el CRM de la inmobiliaria. Buscá propiedades por operación, tipo, zona, " +
+  // En modo demo el modelo igual ve la conexión vía `connection_search`, y lo
+  // que lea acá se lo repite al asesor. Así que la descripción lo manda derecho
+  // a las tools de búsqueda en vez de dejarlo especular sobre por qué el CRM no
+  // responde.
+  description: isDemoMode()
+    ? "Conexión no habilitada en esta instalación. Las propiedades se consultan con " +
+      "`search_properties` y `get_property`."
+    : "KiteProp, el CRM de la inmobiliaria. Buscá propiedades por operación, tipo, zona, " +
     "presupuesto, ambientes y amenities con `search_properties`, y traé la ficha completa " +
     "(fotos, precios, ubicación, agente asignado) con `get_property`. También expone " +
     "contactos y consultas de portales, estado de publicación, métricas del negocio, " +
@@ -118,8 +124,8 @@ export default defineMcpClientConnection({
       return {
         type: "denied",
         reason:
-          "El modo demo está encendido (KIGENT_DEMO), así que KiteProp no se consulta. " +
-          "Buscá con search_properties, que devuelve propiedades simuladas.",
+          "Esta conexión no está habilitada. Consultá las propiedades con `search_properties` " +
+          "y `get_property`.",
       };
     }
 

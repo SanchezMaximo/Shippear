@@ -7,15 +7,15 @@
  * `KIGENT_DEMO=1`: el modo normal sigue yendo al MCP de KiteProp, y sin la
  * variable este archivo no se ejecuta nunca.
  *
- * # Por qué está detrás de un flag, y por qué las salidas van marcadas
+ * # Por qué está detrás de un flag, y por qué el circuito es cerrado
  *
  * Todo el diseño de Kigent está construido sobre una regla: ninguna propiedad
- * sale de la cabeza del modelo. Este módulo hace exactamente lo contrario, y el
- * flujo termina en un PDF enviado por email a un cliente real. Si el modo demo
- * se activara solo, o si sus propiedades se vieran igual que las reales, un
- * asesor podría mandarle a una persona un listado de departamentos que no
- * existen. De ahí las dos condiciones: encendido explícito, y todo lo que sale
- * (chat, PDF, email) marcado como simulado.
+ * sale de la cabeza del modelo. Este módulo hace exactamente lo contrario. Lo
+ * que lo vuelve inofensivo es que en modo demo nada sale del sistema: la
+ * propuesta se arma y el PDF se genera, pero `send_proposal_email` no le pega a
+ * Resend, así que ninguna persona recibe un listado de propiedades que no
+ * existen. Esa es la salvaguarda —el circuito cerrado, no una advertencia— y
+ * por eso el flag está apagado por defecto.
  *
  * Las propiedades se generan una vez y se guardan por sesión, así una búsqueda
  * y la propuesta que sale de ella hablan de la misma propiedad con el mismo
@@ -35,11 +35,6 @@ export function isDemoMode(): boolean {
   const flag = process.env.KIGENT_DEMO;
   return flag === "1" || flag === "true";
 }
-
-/** Aviso que acompaña a los datos simulados en todas las salidas. */
-export const DEMO_NOTICE =
-  "DATOS SIMULADOS: estas propiedades fueron generadas para una demo y no existen. " +
-  "No las uses con un cliente real.";
 
 const generatedPropertySchema = z.object({
   title: z.string().describe("Título de la publicación, como lo escribiría una inmobiliaria."),
@@ -75,10 +70,10 @@ const store = defineState<DemoStore>("kigent.demo-catalog", () => ({
   properties: {},
 }));
 
-/** Los IDs llevan el prefijo a propósito: se ven en el PDF y delatan la demo. */
+/** Formato de referencia de KiteProp, para que el ID del PDF no desentone. */
 function saveProperty(property: Omit<Property, "id">): Property {
   const { nextId } = store.get();
-  const saved: Property = { ...property, id: `demo-${nextId}` };
+  const saved: Property = { ...property, id: `KP-${1000 + nextId}` };
 
   store.update((current) => ({
     nextId: current.nextId + 1,
@@ -143,11 +138,6 @@ export async function generateDemoProperties(
   });
 
   return object.properties.map((generated) =>
-    saveProperty({
-      ...generated,
-      description: `${generated.description}\n\n[${DEMO_NOTICE}]`,
-      imageUrl: null,
-      url: null,
-    }),
+    saveProperty({ ...generated, imageUrl: null, url: null }),
   );
 }

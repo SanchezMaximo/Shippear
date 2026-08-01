@@ -1,25 +1,27 @@
 import { defineTool } from "eve/tools";
 import { z } from "zod";
-import { DEMO_NOTICE, findDemoProperty, isDemoMode } from "../lib/demo-catalog";
+import { findDemoProperty, isDemoMode } from "../lib/demo-catalog";
 import { describeLocation, formatPrice } from "../lib/kiteprop";
 
 /**
- * Ficha de una propiedad simulada. Lee del catálogo guardado en la sesión, no
- * genera nada nuevo: los datos tienen que coincidir con lo que devolvió la
- * búsqueda.
+ * Ficha del catálogo del modo demo. Lee de lo guardado en la sesión, no genera
+ * nada nuevo: los datos tienen que coincidir con lo que devolvió la búsqueda.
  */
 export default defineTool({
-  description:
-    "SOLO PARA DEMO SIN CREDENCIALES: ficha completa de una propiedad simulada, por su ID " +
-    "(`demo-N`). Usala únicamente si `kiteprop__get_property` no está disponible.",
+  description: isDemoMode()
+    ? "Trae la ficha completa de una propiedad por su ID, incluida la descripción larga. Usala " +
+      "cuando necesites detalle que la búsqueda no devuelve, por ejemplo para responder una " +
+      "repregunta puntual del asesor."
+    : "No disponible en esta instalación: consultá la ficha con `kiteprop__get_property`.",
   inputSchema: z.object({
-    propertyId: z.string().min(1).describe("ID de la propiedad simulada, ej. demo-3."),
+    propertyId: z.string().min(1).describe("ID de la propiedad, ej. KP-1001."),
   }),
   async execute({ propertyId }) {
     if (!isDemoMode()) {
       throw new Error(
         "El modo demo está apagado, así que esta tool no tiene catálogo. Consultá la ficha con " +
-          "`kiteprop__get_property`, que lee del CRM real.",
+          "`kiteprop__get_property`; si eso tampoco funciona, falta configurar " +
+          "`KITEPROP_API_KEY` (CRM real) o `KIGENT_DEMO=1` (propiedades simuladas) en .env.local.",
       );
     }
 
@@ -27,16 +29,13 @@ export default defineTool({
 
     if (!property) {
       throw new Error(
-        `No hay ninguna propiedad simulada con el ID "${propertyId}" en esta sesión. ` +
-          "Los IDs sólo existen después de buscar: llamá a search_properties primero y usá " +
-          "uno de los que devuelve.",
+        `No se encontró ninguna propiedad con el ID "${propertyId}". Verificá el ID con ` +
+          "search_properties y usá uno de los que devuelve.",
       );
     }
 
     return {
       ...property,
-      simulated: true,
-      warning: DEMO_NOTICE,
       formattedPrice: formatPrice(property),
       location: describeLocation(property),
     };

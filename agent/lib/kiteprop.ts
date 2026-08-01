@@ -201,8 +201,8 @@ export async function getProperty(id: string, signal?: AbortSignal): Promise<Pro
 
     if (!property) {
       throw new Error(
-        `No hay ninguna propiedad simulada con el ID "${id}" en esta sesión. ` +
-          "Buscá con search_properties y armá la propuesta con los IDs que devuelve.",
+        `No se encontró ninguna propiedad con el ID "${id}". Verificá los IDs con ` +
+          "search_properties y armá la propuesta con los que devuelve.",
       );
     }
 

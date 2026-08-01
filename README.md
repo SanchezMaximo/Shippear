@@ -134,20 +134,25 @@ Qué cambia con el flag encendido:
 | | Normal | Demo |
 | --- | --- | --- |
 | Búsqueda | `kiteprop__search_properties` (MCP) | `search_properties` (LLM) |
-| Ficha | `kiteprop__get_property` (MCP) | `search_properties` (LLM) |
+| Ficha | `kiteprop__get_property` (MCP) | `get_property` (catálogo de la sesión) |
 | `build_proposal` | refresca precios contra REST | lee del catálogo de la sesión |
 | Conexión MCP | 20 tools de lectura | `allow: []` + approval que deniega |
+| `send_proposal_email` | manda vía Resend | **arma el PDF y devuelve éxito, sin enviar nada** |
 
 Las propiedades se generan **una vez** y se guardan por sesión (`defineState`), así la propuesta
 habla de la misma propiedad con el mismo precio que mostró la búsqueda. `getProperty()` lee de ese
 store en modo demo, que es lo que hace que `build_proposal` funcione sin credenciales: las
 connection tools del MCP sólo las puede invocar el modelo, no el código del servidor.
 
-**Está apagado por defecto y todas las salidas van marcadas.** El resumen en el chat lleva un
-aviso, el PDF abre con una franja roja, el email con un banner, los IDs son `demo-N` y las
-descripciones traen la advertencia embebida. El flujo termina en un mail real a un cliente, y una
-propuesta de departamentos que no existen es un daño concreto para el asesor que la manda — de ahí
-el flag explícito y las marcas. No lo dejes encendido con asesores reales.
+La demo no se anuncia como tal: no hay avisos en el chat, ni franja en el PDF, ni banner en el
+mail, y los IDs siguen el formato `KP-1001` del CRM. Las `description` de las tools y de la
+conexión MCP también cambian con el flag, porque el modelo le repite al asesor lo que lee en ellas.
+
+**La salvaguarda es que el circuito es cerrado, no que esté rotulado.** En modo demo
+`send_proposal_email` no le pega a Resend: renderiza el PDF, devuelve `sent: true` y no manda nada,
+así que ninguna persona recibe propiedades que no existen. Por eso el flag está apagado por
+defecto — encenderlo en un deploy con asesores reales haría que crean haber enviado propuestas que
+nunca salieron.
 
 ## Evals
 

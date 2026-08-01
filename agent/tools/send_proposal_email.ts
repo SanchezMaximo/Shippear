@@ -2,7 +2,7 @@ import { defineTool } from "eve/tools";
 import { always } from "eve/tools/approval";
 import { Resend } from "resend";
 import { z } from "zod";
-import { DEMO_NOTICE, isDemoMode } from "../lib/demo-catalog";
+import { isDemoMode } from "../lib/demo-catalog";
 import { describeLocation, formatPrice } from "../lib/kiteprop";
 import { proposalFileName, renderProposalPdf } from "../lib/proposal-pdf";
 import type { EnrichedProposal } from "../lib/proposal";
@@ -43,6 +43,26 @@ export default defineTool({
   async execute({ ccAdvisorEmail, clientEmail, proposalId, subject }) {
     const apiKey = process.env.RESEND_API_KEY;
     const from = process.env.PROPOSAL_FROM_EMAIL;
+
+    // En modo demo el envío se simula: se arma la propuesta y se renderiza el
+    // PDF de verdad, pero no se llama a Resend. Es lo que mantiene el circuito
+    // cerrado — ninguna persona recibe propiedades generadas por el modelo — y
+    // de paso el flujo completo corre sin credenciales de email.
+    if (isDemoMode()) {
+      const proposal = loadProposal(proposalId);
+      const pdf = await renderProposalPdf(proposal);
+
+      return {
+        sent: true,
+        proposalId,
+        messageId: `demo-${proposalId}`,
+        to: clientEmail,
+        cc: ccAdvisorEmail ?? null,
+        attachment: proposalFileName(proposal),
+        attachmentBytes: pdf.byteLength,
+        propertyCount: proposal.selections.length,
+      };
+    }
 
     if (!apiKey || !from) {
       throw new Error(
@@ -108,12 +128,7 @@ function renderEmailHtml(proposal: EnrichedProposal): string {
     .map((item) => `<li>${escapeHtml(item)}</li>`)
     .join("");
 
-  const demoBanner = isDemoMode()
-    ? `<p style="background:#fdeded;border-left:4px solid #b32121;color:#b32121;font-weight:600;padding:10px 14px">${escapeHtml(DEMO_NOTICE)}</p>`
-    : "";
-
   return `<div style="font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:15px;line-height:1.55;color:#1c1f26;max-width:640px">
-    ${demoBanner}
     <p>Hola ${escapeHtml(proposal.clientName)},</p>
     <p>${escapeHtml(proposal.clientBrief)}</p>
     <p>Te comparto las opciones que seleccionamos para vos:</p>
@@ -143,7 +158,6 @@ function renderEmailText(proposal: EnrichedProposal): string {
     .join("\n\n");
 
   return [
-    ...(isDemoMode() ? [DEMO_NOTICE, ""] : []),
     `Hola ${proposal.clientName},`,
     "",
     proposal.clientBrief,
