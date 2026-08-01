@@ -1,26 +1,58 @@
 {
   "name": "kigent",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "imports": {
+    "#*": "./agent/*",
+    "#evals/*": "./evals/*"
+  },
   "scripts": {
-    "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    "build:agent": "eve build",
+    "dev": "eve dev",
+    "web": "next dev",
+    "start": "eve start",
+    "typecheck": "tsc"
   },
   "dependencies": {
-    "next": "16.2.12",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "@radix-ui/react-use-controllable-state": "^1.2.2",
+    "@shikijs/core": "^4.1.0",
+    "@shikijs/engine-javascript": "^4.1.0",
+    "@shikijs/engine-oniguruma": "^4.1.0",
+    "@streamdown/cjk": "^1.0.3",
+    "@streamdown/code": "^1.1.1",
+    "@streamdown/math": "^1.0.2",
+    "@streamdown/mermaid": "^1.0.2",
+    "@tailwindcss/postcss": "^4.3.0",
+    "@vercel/connect": "0.4.3",
+    "ai": "^7.0.47",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
+    "eve": "^0.29.4",
+    "lucide-react": "^1.16.0",
+    "motion": "^12.40.0",
+    "nanoid": "^5.1.11",
+    "next": "^16.3.0-preview.6",
+    "pdf-lib": "^1.17.1",
+    "radix-ui": "^1.4.3",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "resend": "^6.18.1",
+    "shiki": "^4.1.0",
+    "streamdown": "^2.5.0",
+    "tailwind-merge": "^3.6.0",
+    "tailwindcss": "^4.3.0",
+    "use-stick-to-bottom": "^1.1.4",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.2.12",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "@types/node": "^26.1.2",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^6.0.3"
+  },
+  "engines": {
+    "node": "24.x"
   }
 }

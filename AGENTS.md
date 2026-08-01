@@ -1,5 +1,12 @@
-<!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
+# eve Agent App
 
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
-<!-- END:nextjs-agent-rules -->
+This project uses the eve framework. Before writing code, read the relevant guide
+from the installed eve package docs. In most installs, those docs are at
+`node_modules/eve/docs/`. In workspaces or local package installs, resolve the
+installed `eve` package location first and read its `docs/` directory. If
+package docs are unavailable, use https://eve.dev/docs as a fallback.
+
+Before implementing an integration yourself, use
+`eve registry search <query>` or `eve registry list` to discover available
+integrations. Inspect one with `eve registry view <item>`, then install it with
+`eve add <item>`.
